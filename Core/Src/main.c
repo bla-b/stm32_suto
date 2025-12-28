@@ -24,6 +24,7 @@
 /* USER CODE BEGIN Includes */
 #include "buttons.h"
 #include "ui.h"
+#include "i2c_lcd.h"
 //#include "temporary_disp.h"
 #include "usbd_cdc_if.h"
 #include <string.h>
@@ -162,6 +163,7 @@ int main(void)
     update_UI_state(&uiState, encoder_pos, &encoder_btn);
     //update display (csak ha valami valtozott)
     if(update_UI_str(firstLine, secondLine, &uiState, encoder_pos) == true) {
+      
       display_write(firstLine, secondLine);
     }
     
