@@ -55,7 +55,7 @@ void poll_button(Button_t* btn) {
 
 }
 
-bool check_button_event(Button_t* btn, BUTTON_EVENT_E event) {
+bool check_button_event(Button_t* btn, ButtonEvent_t event) {
     if(btn-> event == event) {
         btn -> event = BTN_NO_EVENT;
         return true;

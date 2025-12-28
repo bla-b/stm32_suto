@@ -23,6 +23,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "buttons.h"
+#include "ui.h"
 //#include "temporary_disp.h"
 #include "usbd_cdc_if.h"
 #include <string.h>
@@ -64,16 +65,16 @@ static void MX_I2S3_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_TIM1_Init(void);
 /* USER CODE BEGIN PFP */
-/*int write_display(char* firstline, char* secondline)
-{
-  if(firstline == NULL || secondline == NULL)
-    return 1;
-  if(strlen(firstline) > 16 || strlen(secondline) > 16)
-    ;
-  CDC_Transmit_FS((uint8_t*)longpress_str, strlen(longpress_str));
-  CDC_Transmit_FS((uint8_t*)longpress_str, strlen(longpress_str));
 
-} */
+/*usb-re kiiiras kijelzo nelkul teszteleshez*/
+void display_write(char* firstline, char* secondline)
+{
+  if(firstline == NULL || secondline == NULL || strlen(firstline) > 16 || strlen(secondline) > 16)
+    Error_Handler();
+  char msg[50];
+  snprintf(msg, sizeof(msg), "\n\n\n\n\r%s\r%s\r", firstline, secondline);
+  CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
+}
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -106,6 +107,14 @@ int main(void)
     .last_time = 0u
   };
   uint32_t u32BlinkTimer = 0u;
+
+  UiState_t uiState = {
+    .mainState = UI_HOME,
+    .encoderZero = 0 
+  };
+
+  char firstLine[17] = {0};
+  char secondLine[17] = {0};
   
   /* USER CODE END 1 */
 
@@ -140,37 +149,29 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+    //poll user input
     poll_button(&start_stop_btn);
     poll_button(&encoder_btn);
+    uint32_t encoder_pos = (int32_t)(__HAL_TIM_GET_COUNTER(&htim1)) / 4;
+
     if(check_button_event(&start_stop_btn, BTN_LONG_PRESS)) {
       HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
     }
 
-    char *longpress_str = "long press detected\r\n";
-    if(check_button_event(&encoder_btn, BTN_LONG_PRESS)) {
-      CDC_Transmit_FS((uint8_t*)longpress_str, strlen(longpress_str));
+    //update ui
+    update_UI_state(&uiState, encoder_pos, &encoder_btn);
+    //update display (csak ha valami valtozott)
+    if(update_UI_str(firstLine, secondLine, &uiState, encoder_pos) == true) {
+      display_write(firstLine, secondLine);
     }
-
-    char *shortpress_str = "short press detected\r\n";
-    if(check_button_event(&encoder_btn, BTN_RELEASED)) {
-      CDC_Transmit_FS((uint8_t*)shortpress_str, strlen(shortpress_str));
-    }
-
     
-    
-    uint32_t encoder_pos = __HAL_TIM_GET_COUNTER(&htim1) / 4u;
     // Get the direction (0 = Up, 1 = Down)
-    bool direction = __HAL_TIM_IS_TIM_COUNTING_DOWN(&htim1);
+    //bool direction = __HAL_TIM_IS_TIM_COUNTING_DOWN(&htim1);
 
     //Blinker
     if(HAL_GetTick() - u32BlinkTimer > 500u) {
       HAL_GPIO_TogglePin(LD4_GPIO_Port, LD4_Pin);
       u32BlinkTimer = HAL_GetTick();
-      // Transmit via USB CDC
-      // uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len)
-      char msg[32];
-      snprintf(msg, sizeof(msg), "Pos: %lu, Dir: %d\r\n", encoder_pos, direction);
-      CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
     }
     /* USER CODE END WHILE */
 

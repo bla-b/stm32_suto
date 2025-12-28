@@ -12,26 +12,26 @@ typedef enum {
     BUTTON_ACTIVE,
     BUTTON_LONG_PRESS_REGISTERED,
     RELEASE_BOUNCE
-} BUTTON_STATE_E;
+} ButtonState_t;
 
 typedef enum {
     BTN_NO_EVENT,
     BTN_PRESSED,
     BTN_RELEASED,
     BTN_LONG_PRESS
-} BUTTON_EVENT_E;
+} ButtonEvent_t;
 
 typedef struct {
     GPIO_TypeDef* port;
     uint16_t pin;
     GPIO_PinState activeState;
-    BUTTON_STATE_E state;
-    BUTTON_EVENT_E event;
+    ButtonState_t state;
+    ButtonEvent_t event;
     uint32_t last_time;
 } Button_t;
 
 
 void poll_button(Button_t* btn);
-bool check_button_event(Button_t* btn, BUTTON_EVENT_E event);
+bool check_button_event(Button_t* btn, ButtonEvent_t event);
 
 #endif
