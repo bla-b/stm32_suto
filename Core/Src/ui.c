@@ -72,10 +72,10 @@ bool update_UI_str(char* firstLine, char* secondLine, const UiState_t* ui, uint3
             snprintf(l1, sizeof(l1), "Set: %5.1f*C", ui->newSetValue);
             switch(ui->substate) {
                 case 0:
-                    snprintf(l2, sizeof(l2), "    ^^");
+                    snprintf(l2, sizeof(l2), "     ^^");
                     break;
                 case 1:
-                    snprintf(l2, sizeof(l2), "      ^ ^");
+                    snprintf(l2, sizeof(l2), "       ^ ^");
                     break;
                 case 2:
                     if((encoderPos - ui->encoderZero)%2 == 0)
