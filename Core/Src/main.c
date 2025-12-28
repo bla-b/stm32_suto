@@ -56,6 +56,8 @@ TIM_HandleTypeDef htim1;
 
 /* USER CODE BEGIN PV */
 
+//I2C_LCD_HandleTypeDef lcd1;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -165,6 +167,12 @@ int main(void)
     if(update_UI_str(firstLine, secondLine, &uiState, encoder_pos) == true) {
       
       display_write(firstLine, secondLine);
+
+      /*
+      lcd_puts(&lcd1, firstLine);
+      lcd_gotoxy(&lcd1, 0, 1);
+      lcd_puts(&lcd1, secondLine);
+       */
     }
     
     // Get the direction (0 = Up, 1 = Down)
@@ -257,6 +265,13 @@ static void MX_I2C1_Init(void)
   }
   /* USER CODE BEGIN I2C1_Init 2 */
 
+/*
+init_lcds(void) {
+    lcd1.hi2c = &hi2c1;     // hi2c1 is your I2C handler
+    lcd1.address = 0x4E;    // I2C address for the first LCD
+    lcd_init(&lcd1);        // Initialize the first LCD
+}
+*/
   /* USER CODE END I2C1_Init 2 */
 
 }
