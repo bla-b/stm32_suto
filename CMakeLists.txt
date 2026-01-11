@@ -47,7 +47,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
     Core/Src/buttons.c
     Core/Src/ui.c
-    Core/Src/i2c_lcd.c
+    # Core/Src/i2c_lcd.c
 )
 
 # Add include paths

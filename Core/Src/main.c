@@ -109,11 +109,14 @@ int main(void)
     .event = BTN_NO_EVENT,
     .last_time = 0u
   };
+  Encoder_t encoder = {
+    .timerHandle = &htim1
+  };
+
   uint32_t u32BlinkTimer = 0u;
 
   UiState_t uiState = {
-    .mainState = UI_HOME,
-    .encoderZero = 0 
+    .mainState = UI_HOME
   };
 
   char firstLine[17] = {0};
@@ -153,18 +156,17 @@ int main(void)
   while (1)
   {
     //poll user input
-    poll_button(&start_stop_btn);
-    poll_button(&encoder_btn);
-    uint32_t encoder_pos = (int32_t)(__HAL_TIM_GET_COUNTER(&htim1)) / 4;
+    button_poll(&start_stop_btn);
+    button_poll(&encoder_btn);
 
-    if(check_button_event(&start_stop_btn, BTN_LONG_PRESS)) {
+    if(button_check_event(&start_stop_btn, BTN_LONG_PRESS)) {
       HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
     }
 
     //update ui
-    update_UI_state(&uiState, encoder_pos, &encoder_btn);
+    update_UI_state(&uiState, &encoder, &encoder_btn);
     //update display (csak ha valami valtozott)
-    if(update_UI_str(firstLine, secondLine, &uiState, encoder_pos) == true) {
+    if(update_UI_str(firstLine, secondLine, &uiState, &encoder) == true) {
       
       display_write(firstLine, secondLine);
 

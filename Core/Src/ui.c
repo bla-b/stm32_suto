@@ -1,92 +1,210 @@
 #include "ui.h"
+#include "buttons.h"
 #include "main.h"
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
 
-double setTemperature = 81.5;
+#define MENU_OPTIONS_NUM (2)
 
-void update_UI_state(UiState_t* ui, uint32_t encoderPos, Button_t* encoderBtn) {
+static Setting_t setTemp = {
+    .name = "",
+    .value = 81.5,
+    .digits = 4,
+    .decimalPlaces = 1,
+    .printfStr = "Set: %5.1f*C",
+    .firstDigitOffset = 5
+};
 
-    switch(ui->mainState) {
-        case UI_HOME:
-            if(check_button_event(encoderBtn, BTN_RELEASED)) {
-                ui->mainState = UI_SETTEMP;
-                ui->substate = 0;
-                ui->newSetValue = setTemperature;
-                ui->encoderZero = encoderPos - (((int)ui->newSetValue)/10); //elkezdjuk allitani a felso 2 szamjegyet
+static Setting_t pid_settings[3] = {
+    {
+        .name = "P",
+        .value = 0.1,
+        .digits = 4,
+        .decimalPlaces = 3,
+        .printfStr = "P: %5.3f",
+        .firstDigitOffset = 3
+    },
+    {
+        .name = "I",
+        .value = 0.0,
+        .digits = 4,
+        .decimalPlaces = 3,
+        .printfStr = "I: %5.3f",
+        .firstDigitOffset = 3
+    },
+    {
+        .name = "D",
+        .value = 0.0,
+        .digits = 4,
+        .decimalPlaces = 3,
+        .printfStr = "D: %5.3f",
+        .firstDigitOffset = 3
+    }
+};
+
+static int ten_to_the_pow(int exponent) {
+    int num = 1;
+    for(int i = 0; i < exponent; i++) {
+        num *= 10;
+    }
+    return num;
+}
+
+static void setter_begin(SetterState_t *st, Setting_t *setting, Encoder_t *encoder)
+{
+    st->setting = setting;
+    st->currentValue = setting->value;
+    st->currentDigitNum = setting->digits - 1;
+    st->intValue = (int)(setting->value * ten_to_the_pow(setting->decimalPlaces));
+
+    st->currentDigitVal = st->intValue / ten_to_the_pow(st->currentDigitNum);
+    st->intValue -= st->currentDigitVal * ten_to_the_pow(st->currentDigitNum);
+
+
+    encoder_zero(encoder);
+}
+
+static bool setter_poll(SetterState_t *st, Encoder_t *encoder, Button_t* btn) {
+    if(st->currentDigitNum >= 0) {
+        int digit = st->currentDigitVal + encoder_get_delta(encoder);
+        if(digit > 9) {
+            st->currentDigitVal = digit = 9;
+            encoder_zero(encoder);
+        }
+        else if(digit < 0) {
+            st->currentDigitVal = digit = 0;
+            encoder_zero(encoder);
+        }
+
+        st->currentValue = (st->intValue + digit * ten_to_the_pow(st->currentDigitNum))/((double)ten_to_the_pow(st->setting->decimalPlaces));
+
+        if(button_check_event(btn, BTN_RELEASED)) {
+            st->intValue = st->intValue + digit * ten_to_the_pow(st->currentDigitNum);
+            st->currentDigitNum--;
+
+            if(st->currentDigitNum >= 0) {
+                st->currentDigitVal = (st->intValue / ten_to_the_pow(st->currentDigitNum)) % 10;
+                st->intValue -= st->currentDigitVal * ten_to_the_pow(st->currentDigitNum);
             }
-            break;
-        case UI_SETTEMP:
-            switch(ui->substate) {
-                case 0:
-                    ui->newSetValue = (int32_t)(encoderPos - ui->encoderZero) * 10 + fmod(ui->newSetValue, 10.0);
-                    if(check_button_event(encoderBtn, BTN_RELEASED)) {
-                        ui->substate = 1;
-                        ui->encoderZero = encoderPos - (ui->newSetValue - ((int)ui->newSetValue/10)*10)*2; //also ket helyiertek, 0,5C felbontassal
+
+            encoder_zero(encoder);
+        }
+    }
+    if(st->currentDigitNum == -1) {
+        if(button_check_event(btn, BTN_RELEASED)) {
+            if(encoder_get_delta(encoder) % 2 == 0) {
+                //ok
+                st->setting->value = st->currentValue;
+            }
+            encoder_zero(encoder);
+            return false;
+        }
+    }
+    return true;
+}
+
+
+void update_UI_state(UiState_t* ui, Encoder_t* encoder, Button_t* encoderBtn) {
+
+    if(ui->setterActive) {
+        if(setter_poll(&ui->setter, encoder, encoderBtn) == false) {
+            ui->setterActive = false;
+        }
+    }
+    else {
+        switch(ui->mainState) {
+            case UI_HOME:
+                if(button_check_event(encoderBtn, BTN_RELEASED)) {
+                    ui->setterActive = true;
+                    setter_begin(&ui->setter, &setTemp, encoder);
+                }
+                if(button_check_event(encoderBtn, BTN_LONG_PRESS)) {
+                    ui->mainState = UI_MENU;
+                    encoder_zero(encoder);
+                }
+                break;
+            case UI_MENU:
+                if(button_check_event(encoderBtn, BTN_RELEASED)) {
+                    if(encoder_get_delta(encoder) % MENU_OPTIONS_NUM == 0) { //PID
+                        ui->mainState = UI_MENU_PID;
+                        encoder_zero(encoder);
                     }
-                    break;
-                case 1:
-                    ui->newSetValue = ((int)ui->newSetValue/10)*10 + (int32_t)(encoderPos - ui->encoderZero)*0.5;
-                    if(check_button_event(encoderBtn, BTN_RELEASED)) {
-                        ui->substate = 2;
-                        ui->encoderZero = encoderPos;
-                    }
-                    break;
-                case 2:
-                    if(check_button_event(encoderBtn, BTN_RELEASED)) {
-                        if((encoderPos - ui->encoderZero)%2 == 0)  {//Ok, egyébként cancel
-                            setTemperature = ui->newSetValue;
-                        }
+                    if(encoder_get_delta(encoder) % MENU_OPTIONS_NUM == 1) { //Back
                         ui->mainState = UI_HOME;
-                        ui->encoderZero = encoderPos;
+                        encoder_zero(encoder);
                     }
-                    break;
-                default:
-                    Error_Handler();
-            }
-        case UI_MENU:
-            break;
+                }
+                break;
+            case UI_MENU_PID:
+                if(button_check_event(encoderBtn, BTN_RELEASED)) {
+                    int selected = encoder_get_delta(encoder) % 4;
+                    if(selected == 3) {  //Back
+                        ui->mainState = UI_MENU;
+                        encoder_zero(encoder);
+                    }
+                    else {
+                        ui->setterActive = true;
+                        setter_begin(&ui->setter, &pid_settings[selected], encoder);
+                    }
+                    
+                }
+        }
     }
 }
 
-bool update_UI_str(char* firstLine, char* secondLine, const UiState_t* ui, uint32_t encoderPos) {
+bool update_UI_str(char* firstLine, char* secondLine, const UiState_t* ui, const Encoder_t* encoder) {
     char l1[17];
     char l2[17];
     bool h1, h2, h3, fan; //to do: updatelni ezeket
     h1 = h2 = h3 = fan = true;
     double temps[4] = {69.1, 132.4, 145.5, 111.2};
 
-    switch(ui->mainState) {
-        case UI_HOME:
-            if((encoderPos - ui->encoderZero)%2 == 0) {
-                snprintf(l1, sizeof(l1), "Set: %.1f*C", setTemperature); //° karaktert valahogy meg kene oldani
-                snprintf(l2, sizeof(l2), "%5.1f*C %c %c %c %c", setTemperature, h1?'1':' ', h2?'2':' ', h3?'3':' ', fan?'F':' ');
+    if(ui->setterActive) {
+        snprintf(l1, sizeof(l1), ui->setter.setting->printfStr, ui->setter.currentValue);
+            if(ui->setter.currentDigitNum == -1) {
+                if(encoder_get_delta(encoder)%2 == 0)
+                    snprintf(l2, sizeof(l2), ">OK      Cancel");
+                else
+                    snprintf(l2, sizeof(l2), " OK     >Cancel");
             }
             else {
-                snprintf(l1, sizeof(l1), "%5.1f*C  %5.1f*C", temps[0], temps[1]);
-                snprintf(l2, sizeof(l2), "%5.1f*C  %5.1f*C", temps[2], temps[3]);
+                snprintf(l2, sizeof(l2), "                ");
+                int k = ui->setter.setting->digits - 1 - ui->setter.currentDigitNum;
+                if(k > ui->setter.setting->digits - ui->setter.setting->decimalPlaces - 1)
+                    k++;
+                k += ui->setter.setting->firstDigitOffset;
+                if(k >= 0 && k <= sizeof(l2) - 1)
+                    l2[k] = '^';
+
             }
-            break;
-        case UI_SETTEMP:
-            snprintf(l1, sizeof(l1), "Set: %5.1f*C", ui->newSetValue);
-            switch(ui->substate) {
-                case 0:
-                    snprintf(l2, sizeof(l2), "     ^^");
-                    break;
-                case 1:
-                    snprintf(l2, sizeof(l2), "       ^ ^");
-                    break;
-                case 2:
-                    if((encoderPos - ui->encoderZero)%2 == 0)
-                        snprintf(l2, sizeof(l2), ">OK      Cancel");
-                    else
-                        snprintf(l2, sizeof(l2), " OK     >Cancel");
-                    break;
-                default:
-                    Error_Handler();
-            }
-        
+    }
+    else {
+        switch(ui->mainState) {
+            case UI_HOME:
+                if(encoder_get_delta(encoder)%2 == 0) {
+                    snprintf(l1, sizeof(l1), "Set: %.1f*C", setTemp.value); //° karaktert valahogy meg kene oldani
+                    snprintf(l2, sizeof(l2), "%5.1f*C %c %c %c %c", setTemp.value, h1?'1':' ', h2?'2':' ', h3?'3':' ', fan?'F':' ');
+                }
+                else {
+                    snprintf(l1, sizeof(l1), "%5.1f*C  %5.1f*C", temps[0], temps[1]);
+                    snprintf(l2, sizeof(l2), "%5.1f*C  %5.1f*C", temps[2], temps[3]);
+                }
+                break;
+            case UI_MENU:
+                snprintf(l1, sizeof(l1), " PID settings");
+                snprintf(l2, sizeof(l2), " Back");
+                if(encoder_get_delta(encoder) % MENU_OPTIONS_NUM == 0)
+                    l1[0] = '>';
+                else
+                    l2[0] = '>';
+                break;
+            case UI_MENU_PID:
+                int selected = encoder_get_delta(encoder) % 4;
+                int next = (selected + 1) % 4;
+                snprintf(l1, sizeof(l1), ">%s", selected == 3 ? "Back" : pid_settings[selected].name);
+                snprintf(l2, sizeof(l2), " %s", next == 3 ? "Back" : pid_settings[next].name);
+        }
     }
 
     if(!(strcmp(l1, firstLine) || strcmp(l2, secondLine)))
@@ -94,4 +212,13 @@ bool update_UI_str(char* firstLine, char* secondLine, const UiState_t* ui, uint3
     strcpy(firstLine, l1);
     strcpy(secondLine, l2);
     return true;
+}
+
+void ui_get_settings(double* temp, double p_i_d[])
+{
+    if(temp != NULL)
+        *temp = setTemp.value;
+    if(p_i_d != NULL)
+        for(int i = 0; i < 3; i++)
+            p_i_d[i] = pid_settings[i].value;
 }

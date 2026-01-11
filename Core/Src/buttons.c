@@ -5,7 +5,9 @@
 #define DEBOUNCE_TIME_MS  (20)
 #define LONG_PRESS_TIME_MS (1500)
 
-void poll_button(Button_t* btn) {
+#define ENCODER_PRESCALER (4) //a timer 4-et szamol kattanasonkent
+
+void button_poll(Button_t* btn) {
     bool currentlyPressed = (btn -> activeState == HAL_GPIO_ReadPin(btn->port, btn->pin));
 
     switch(btn->state) {
@@ -55,10 +57,25 @@ void poll_button(Button_t* btn) {
 
 }
 
-bool check_button_event(Button_t* btn, ButtonEvent_t event) {
+bool button_check_event(Button_t* btn, ButtonEvent_t event) {
     if(btn-> event == event) {
         btn -> event = BTN_NO_EVENT;
         return true;
     }
     return false;
+}
+
+//encoder 
+/*
+void encoder_poll(Encoder_t* enc) {
+    enc->encoderPos = __HAL_TIM_GET_COUNTER(enc->timerHandle);
+}
+*/
+
+int32_t encoder_get_delta(const Encoder_t* enc) {
+    return ((int16_t)(__HAL_TIM_GET_COUNTER(enc->timerHandle) - enc->encoderZero)) / ENCODER_PRESCALER;
+}
+
+void encoder_zero(Encoder_t* enc) {
+    enc->encoderZero = __HAL_TIM_GET_COUNTER(enc->timerHandle);
 }

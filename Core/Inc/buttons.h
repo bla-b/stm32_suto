@@ -4,7 +4,9 @@
 
 #include "main.h"
 #include "stm32f4xx_hal_gpio.h"
+#include "stm32f4xx_hal_tim.h"
 #include <stdbool.h>
+#include <stdint.h>
 
 typedef enum {
     BUTTON_INACTIVE,
@@ -31,7 +33,20 @@ typedef struct {
 } Button_t;
 
 
-void poll_button(Button_t* btn);
-bool check_button_event(Button_t* btn, ButtonEvent_t event);
+void button_poll(Button_t* btn);
+bool button_check_event(Button_t* btn, ButtonEvent_t event);
+
+
+//rotary encoder
+typedef struct {
+    TIM_HandleTypeDef *timerHandle;
+    uint32_t encoderZero;
+    //uint32_t encoderPos;
+} Encoder_t;
+
+void encoder_poll(Encoder_t* enc);
+int32_t encoder_get_delta(const Encoder_t* enc);
+void encoder_zero(Encoder_t* enc);
+
 
 #endif
