@@ -97,13 +97,13 @@ void tempctrl_pid_loop(double temps[4]) {
     integral = (integral < -1000.0) ? -1000.0 : integral;
 
     //calculate output:
-    pwrOut = (int)(P * error + I * integral + D * derivative);
+    pwrOut = (int)(P * error + I * integral + D * derivative); //ezt lehet meg kell majd szorozni mondjuk 1000-rel
 
     //find best power level
-    if(ABS(pwrOut - lastPwrOut) > OUT_PWR_HYSTERESYS) {
+    if(ABS(pwrOut - lastPwrOut) > OUT_PWR_HYSTERESYS) { //hiszterizis, hogy ne kapcsolgassanak feleslegesen a relek, majd kiderul kell-e
         int newLvlIndex = 0;
         for(int i = 1; i < 8; i++) {
-            if(pwrOut > ((pwrLevels[i].power_w + pwrLevels[i - 1].power_w) / 2))
+            if(pwrOut > ((pwrLevels[i].power_w + pwrLevels[i - 1].power_w) / 2)) //megnezzuk melyikhez van a legkozelebb
                 newLvlIndex++;
         }
 
@@ -131,6 +131,12 @@ void tempctrl_pid_loop(double temps[4]) {
     else if(maxTdiff > FAN_OFF_T_DIFF_THRESHOLD && fanIsOn) {
         HAL_GPIO_WritePin(FAN_GPIO_Port, FAN_Pin, GPIO_PIN_RESET);
     }
+
+
+    //
+    lastTime = time;
+    lastError = error;
+    lastPwrOut = pwrOut;
 }
 
 
