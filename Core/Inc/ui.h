@@ -42,6 +42,6 @@ typedef struct {
 void update_UI_state(UiState_t* ui, Encoder_t* encoder, Button_t* encoderBtn);
 bool update_UI_str(char* firstLine, char* secondLine, const UiState_t* ui, const Encoder_t* encoderPos);
 
-void ui_get_settings(double* setTemp, double p_i_d[]);
+void ui_get_settings(double* setTemp, double* P, double* I, double* D);
 
 #endif

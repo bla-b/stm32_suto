@@ -1,6 +1,7 @@
 #include "ui.h"
 #include "buttons.h"
 #include "main.h"
+#include "stm32f4xx_hal_gpio.h"
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
@@ -158,6 +159,13 @@ bool update_UI_str(char* firstLine, char* secondLine, const UiState_t* ui, const
     char l2[17];
     bool h1, h2, h3, fan; //to do: updatelni ezeket
     h1 = h2 = h3 = fan = true;
+    /*
+    h1 = (HAL_GPIO_ReadPin(H1_GPIO_Port, H1_Pin) == GPIO_PIN_SET);
+    h2 = (HAL_GPIO_ReadPin(H2_GPIO_Port, H2_Pin) == GPIO_PIN_SET);
+    h3 = (HAL_GPIO_ReadPin(H3_GPIO_Port, H3_Pin) == GPIO_PIN_SET);
+    fan = (HAL_GPIO_ReadPin(FAN_GPIO_Port, FAN_Pin) == GPIO_PIN_SET);
+    */
+
     double temps[4] = {69.1, 132.4, 145.5, 111.2};
 
     if(ui->setterActive) {
@@ -214,11 +222,13 @@ bool update_UI_str(char* firstLine, char* secondLine, const UiState_t* ui, const
     return true;
 }
 
-void ui_get_settings(double* temp, double p_i_d[])
+void ui_get_settings(double* temp, double* P, double* I, double* D)
 {
     if(temp != NULL)
         *temp = setTemp.value;
-    if(p_i_d != NULL)
-        for(int i = 0; i < 3; i++)
-            p_i_d[i] = pid_settings[i].value;
+    if(P != NULL && I != NULL && D != NULL) {
+        *P = pid_settings[0].value;
+        *I = pid_settings[1].value;
+        *D = pid_settings[2].value;
+    }
 }
