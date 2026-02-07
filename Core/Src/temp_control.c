@@ -1,7 +1,5 @@
 #include "temp_control.h"
 #include "main.h"
-#include "stm32f4xx_hal.h"
-#include "stm32f4xx_hal_gpio.h"
 #include "ui.h"
 
 //H1 = 2.4kW, H2 = 2kW, H3 = 1.2kW

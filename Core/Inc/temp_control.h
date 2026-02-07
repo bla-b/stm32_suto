@@ -1,6 +1,7 @@
 #ifndef TEMP_CONTROL_H
 #define TEMP_CONTROL_H
 
+#include "main.h"
 
 typedef struct {
     int power_w;
