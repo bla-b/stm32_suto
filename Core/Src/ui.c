@@ -1,7 +1,6 @@
 #include "ui.h"
 #include "buttons.h"
 #include "main.h"
-#include "stm32f4xx_hal_gpio.h"
 #include <math.h>
 #include <stdio.h>
 #include <string.h>

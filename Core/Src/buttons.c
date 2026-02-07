@@ -1,6 +1,4 @@
 #include "buttons.h"
-#include "stm32f4xx_hal.h"
-#include "stm32f4xx_hal_gpio.h"
 
 #define DEBOUNCE_TIME_MS  (20)
 #define LONG_PRESS_TIME_MS (1500)

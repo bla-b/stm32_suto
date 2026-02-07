@@ -27,7 +27,11 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "buttons.h"
+#include "ui.h"
+#include "i2c_lcd.h"
+#include "usbd_cdc_if.h"
+#include <string.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -54,7 +58,15 @@
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
-
+/*usb-re kiiiras kijelzo nelkul teszteleshez*/
+void display_write(char* firstline, char* secondline)
+{
+  if(firstline == NULL || secondline == NULL || strlen(firstline) > 16 || strlen(secondline) > 16)
+    Error_Handler();
+  char msg[50];
+  snprintf(msg, sizeof(msg), "\n\n\n\n\r%s\r%s\r", firstline, secondline);
+  CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
+}
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -71,6 +83,34 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
 
+  Button_t start_stop_btn = {
+    .port = START_BTN_GPIO_Port,
+    .pin = START_BTN_Pin,
+    .activeState = GPIO_PIN_SET,
+    .state = BUTTON_INACTIVE,
+    .event = BTN_NO_EVENT,
+    .last_time = 0u
+  };
+  Button_t encoder_btn = {
+    .port = ROT_BTN_GPIO_Port,
+    .pin = ROT_BTN_Pin,
+    .activeState = GPIO_PIN_RESET,
+    .state = BUTTON_INACTIVE,
+    .event = BTN_NO_EVENT,
+    .last_time = 0u
+  };
+  Encoder_t encoder = {
+    .timerHandle = &htim2
+  };
+
+  uint32_t u32BlinkTimer = 0u;
+
+  UiState_t uiState = {
+    .mainState = UI_HOME
+  };
+
+  char firstLine[17] = {0};
+  char secondLine[17] = {0};
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -104,6 +144,35 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+    button_poll(&start_stop_btn);
+    button_poll(&encoder_btn);
+
+    if(button_check_event(&start_stop_btn, BTN_LONG_PRESS)) {
+      HAL_GPIO_TogglePin(ACTIVE_LED_GPIO_Port, ACTIVE_LED_Pin);
+    }
+
+    //update ui
+    update_UI_state(&uiState, &encoder, &encoder_btn);
+    //update display (csak ha valami valtozott)
+    if(update_UI_str(firstLine, secondLine, &uiState, &encoder) == true) {
+      
+      display_write(firstLine, secondLine);
+
+      /*
+      lcd_puts(&lcd1, firstLine);
+      lcd_gotoxy(&lcd1, 0, 1);
+      lcd_puts(&lcd1, secondLine);
+       */
+    }
+    
+    // Get the direction (0 = Up, 1 = Down)
+    //bool direction = __HAL_TIM_IS_TIM_COUNTING_DOWN(&htim1);
+
+    //Blinker
+    if(HAL_GetTick() - u32BlinkTimer > 500u) {
+      HAL_GPIO_TogglePin(STA_LED_GPIO_Port, STA_LED_Pin);
+      u32BlinkTimer = HAL_GetTick();
+    }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
