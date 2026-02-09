@@ -1,7 +1,13 @@
 #include "ads124s08.h"
+#include "main.h"
+#include "stm32l5xx_hal_gpio.h"
+#include "stm32l5xx_hal_spi.h"
+
+#include "spi.h"
+#include <stdint.h>
 
 
-/*
+/* Eredeti:
 Configure microcontroller for SPI mode 1 (CPOL = 0, CPHA = 1)
 Configure microcontroller GPIO for /DRDY as a falling edge triggered interrupt input
 Set CS low;
@@ -38,4 +44,61 @@ Set CS low;
 Send 0A;//STOP command stops conversions and puts the device in standby mode;
 Set CS to high;
 */
-void ads_init();
+
+/*T1:
+F+: ain0
+S+: ain1
+S-: ain2
+
+02h: 0x12  (INPMUX)
+07h: 0xF0   (IDACMUX)
+
+T2:
+F+: ain3
+S+: ain4
+S-: ain5
+
+02h: 0x45  (INPMUX)
+07h: 0xF3   (IDACMUX)
+
+T3:
+F+: ain6
+S+: ain7
+S-: ain8
+
+02h: 0x78  (INPMUX)
+07h: 0xF6   (IDACMUX)
+
+T4:
+F+: ain9
+S+: ain10
+S-: ain11
+
+02h: 0xAB  (INPMUX)
+07h: 0xF9   (IDACMUX)
+
+*/
+void ads124s08_init() {
+    const uint8_t resetCmd = 0x06;
+    const uint8_t setupMsg[8] = {
+        0x42,// WREG starting at 02h address
+        05,// Write to 6 registers
+        0x12,// Select AINP = AIN1 and AINN = AIN2
+        0x0A,// PGA enabled, Gain = 4
+        0x14,// Continuous conversion mode, low-latency filter, 20-SPS data rate
+        0x12,// Positive reference buffer enabled, negative reference buffer disabled
+            // REFP0 and REFN0 reference selected, internal reference always on
+        0x07,// IDAC magnitude set to 1 mA
+        0xF0// IDAC1 set to AIN0, IDAC2 disabled
+    };
+    //reset
+    HAL_GPIO_WritePin(ADC__CS_GPIO_Port, ADC__CS_Pin, GPIO_PIN_RESET);
+    HAL_SPI_Transmit(&hspi3, &resetCmd, 1, 10u);
+    HAL_GPIO_WritePin(ADC__CS_GPIO_Port, ADC__CS_Pin, GPIO_PIN_SET);
+    //setup
+    HAL_GPIO_WritePin(ADC__CS_GPIO_Port, ADC__CS_Pin, GPIO_PIN_RESET);
+    HAL_SPI_Transmit(&hspi3, setupMsg, sizeof(setupMsg), 10u);
+}
+
+void ads124s08_poll() {
+}
