@@ -29,6 +29,8 @@
 /* USER CODE BEGIN Includes */
 #include "buttons.h"
 #include "ui.h"
+#include "temp_control.h"
+#include "ads124s08.h"
 #include "i2c_lcd.h"
 #include "usbd_cdc_if.h"
 #include <string.h>
@@ -111,6 +113,7 @@ int main(void)
 
   char firstLine[17] = {0};
   char secondLine[17] = {0};
+  bool isActive = false;
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -119,7 +122,7 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-
+  ads124s08_init();
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -147,8 +150,14 @@ int main(void)
     button_poll(&start_stop_btn);
     button_poll(&encoder_btn);
 
-    if(button_check_event(&start_stop_btn, BTN_LONG_PRESS)) {
+    if(button_check_event(&start_stop_btn, BTN_RELEASED)) {
       HAL_GPIO_TogglePin(ACTIVE_LED_GPIO_Port, ACTIVE_LED_Pin);
+      isActive = !isActive;
+    }
+
+    ads124s08_poll();
+    if(true) {
+      tempctrl_pid_loop(isActive); //todo: csak akkor kell meghivni ha korbeert a 4 szenzoron
     }
 
     //update ui

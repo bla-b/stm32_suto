@@ -1,5 +1,7 @@
 #include "temp_control.h"
 #include "main.h"
+#include "ads124s08.h"
+#include "stm32l5xx_hal_gpio.h"
 #include "ui.h"
 
 //H1 = 2.4kW, H2 = 2kW, H3 = 1.2kW
@@ -69,10 +71,22 @@ void tempctrl_pid_loop(bool isActive) {
     int pwrOut;
     uint32_t time = HAL_GetTick();
 
+    if(isActive == false) { // ha nincs bekapcsolva:
+        HAL_GPIO_WritePin(H1_GPIO_Port, H1_Pin, GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(H2_GPIO_Port, H2_Pin, GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(H3_GPIO_Port, H3_Pin, GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(FAN_GPIO_Port, FAN_Pin, GPIO_PIN_RESET);
+        return;
+    }
+
     //copy settings:
     double P, I, D;
     double setTemp;
     ui_get_settings(&setTemp, &P, &I, &D);
+
+    //get temperature:
+    double temps[4];
+    ads124s08_getTemps(temps);
 
     //calculate error:
     double avg = temps[0] + temps[1] + temps[2] + temps[3];

@@ -1,5 +1,6 @@
 #include "ads124s08.h"
 #include "main.h"
+#include "stm32l5xx_hal.h"
 #include "stm32l5xx_hal_gpio.h"
 #include "stm32l5xx_hal_spi.h"
 
@@ -47,6 +48,8 @@ Send 0A;//STOP command stops conversions and puts the device in standby mode;
 Set CS to high;
 */
 
+#define FILTER_SETTLE_TIME_MS (69)
+#define R_REF_VAL (1620.0)
 
 typedef struct {
     double resistance;
@@ -88,7 +91,7 @@ S-: ain11
 07h: 0xF9   (IDACMUX)*/
 uint8_t t4_setup[6] = {0x42, 0x00,0xAB, 0x47, 0x00, 0xF9};
 
-volatile Sensor_t sensors[4] = {{
+Sensor_t sensors[4] = {{
     .resistance = 0.0, .tempDegC = 0.0,
     .pSetupData = t1_setup,
     .setupDataSize = sizeof(t1_setup)
@@ -109,8 +112,11 @@ volatile Sensor_t sensors[4] = {{
 volatile bool dataReadyFlag = false; //todo: external interruptban igazra allitani
 
 
-volatile uint8_t rawData[4][3] = {{0,0,0}};
-
+static void convert(Sensor_t* sensor, uint8_t rawData[]) {
+    uint32_t intData = rawData[0] + (rawData[1] << 4) + (rawData[2] << 8);
+    sensor->resistance = R_REF_VAL * (intData / (4.0 * (0x01 << 23)));
+    sensor->tempDegC = (sensor->resistance - 100.0) / (100.0 * 0.00385);//todo: pontosabban
+}
 
 void ads124s08_init() {
     const uint8_t resetCmd = 0x06;
@@ -119,7 +125,7 @@ void ads124s08_init() {
         05,// Write to 6 registers
         0x12,// Select AINP = AIN1 and AINN = AIN2
         0x0A,// PGA enabled, Gain = 4
-        0x14,// Continuous conversion mode, low-latency filter, 20-SPS data rate
+        0x34,// Single-shot conversion mode, low-latency filter, 20-SPS data rate
         0x12,// Positive reference buffer enabled, negative reference buffer disabled
             // REFP0 and REFN0 reference selected, internal reference always on
         0x07,// IDAC magnitude set to 1 mA
@@ -136,30 +142,41 @@ void ads124s08_init() {
 
 void ads124s08_poll() {
     static adcState_t state = ADC_SWITCH_INPUT;
-    static int selectedSensorNum = 0;
+    static int selNum = 0; //eppen olvasott szenzor szama (0-tol)
     static uint32_t last_mux_switch_time = 0u;
 
     const uint8_t readCmd = 0x12;
+    const uint8_t startCmd = 0x08;
+
+    uint8_t rawData[3] = {0};
 
     switch (state) {
         case ADC_SWITCH_INPUT:
-
+            HAL_SPI_Transmit(&hspi3, sensors[selNum].pSetupData, sensors[selNum].setupDataSize, 10u);
+            last_mux_switch_time = HAL_GetTick();
         break;
         case ADC_WAIT_FILTER_SETTLE:
+            if(HAL_GetTick() - last_mux_switch_time > FILTER_SETTLE_TIME_MS) {
+                dataReadyFlag = false; //biztos ami biztos
+                HAL_SPI_Transmit(&hspi3, &startCmd, 1, 10u);
+                state = ADC_WAIT_FOR_DREADY;
+            }
 
         break;
         case ADC_WAIT_FOR_DREADY:
             if(dataReadyFlag) { //read data
                 dataReadyFlag = false;
                 HAL_SPI_Transmit(&hspi3, &readCmd, 1, 10u);
-                HAL_SPI_Receive(&hspi3, rawData[selectedSensorNum], 3, 10u);
+                HAL_SPI_Receive(&hspi3, rawData, 3, 10u);
+                convert(&sensors[selNum], rawData);
                 state = ADC_SWITCH_INPUT;
+                selNum = (selNum + 1) % 4;
         }
     }
-
-
 }
 
-void ads124s08_getTemps(arrayOf4temps[]) {
-
+void ads124s08_getTemps(double arrayOf4temps[]) {
+    for(int i = 0; i < 4; i++) {
+        arrayOf4temps[i] = sensors[i].tempDegC;
+    }
 }
