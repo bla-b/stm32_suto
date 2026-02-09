@@ -4,6 +4,7 @@
 #include "stm32l5xx_hal_spi.h"
 
 #include "spi.h"
+#include <stdbool.h>
 #include <stdint.h>
 
 
@@ -78,6 +79,11 @@ S-: ain11
 07h: 0xF9   (IDACMUX)
 
 */
+volatile bool dataReadyFlag = false;
+
+volatile uint8_t rawData[4][3] = {{0,0,0}}
+
+
 void ads124s08_init() {
     const uint8_t resetCmd = 0x06;
     const uint8_t setupMsg[8] = {
@@ -101,4 +107,27 @@ void ads124s08_init() {
 }
 
 void ads124s08_poll() {
+    static adcState_t state = ADC_SWITCH_INPUT;
+    static int selectedSensorNum = 0;
+    static uint32_t last_mux_switch_time = 0u;
+
+    const uint8_t readCmd = 0x12;
+    
+    switch (state) {
+        case ADC_SWITCH_INPUT:
+
+        break;
+        case ADC_WAIT_FILTER_SETTLE:
+
+        break;
+        case ADC_WAIT_FOR_DREADY:
+            if(dataReadyFlag) { //read data
+                dataReadyFlag = false;
+                HAL_SPI_Transmit(&hspi3, &readCmd, 1, 10u);
+                HAL_SPI_Receive(&hspi3, rawData[selectedSensorNum], 3, 10u);
+                state = ADC_SWITCH_INPUT;
+        }
+    }
+
+
 }
