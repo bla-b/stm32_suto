@@ -2,6 +2,7 @@
 #define TEMP_CONTROL_H
 
 #include "main.h"
+#include <stdbool.h>
 
 typedef struct {
     int power_w;

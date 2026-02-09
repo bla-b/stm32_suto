@@ -154,6 +154,7 @@ void ads124s08_poll() {
         case ADC_SWITCH_INPUT:
             HAL_SPI_Transmit(&hspi3, sensors[selNum].pSetupData, sensors[selNum].setupDataSize, 10u);
             last_mux_switch_time = HAL_GetTick();
+            state = ADC_WAIT_FILTER_SETTLE;
         break;
         case ADC_WAIT_FILTER_SETTLE:
             if(HAL_GetTick() - last_mux_switch_time > FILTER_SETTLE_TIME_MS) {
