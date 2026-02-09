@@ -59,7 +59,7 @@ const PowerLevel_t pwrLevels[8] = {
     }
 };
 
-void tempctrl_pid_loop(double temps[4]) {
+void tempctrl_pid_loop(bool isActive) {
     static uint32_t lastTime = 0;
     static double lastError = 0.0;
     static double integral = 0.0;

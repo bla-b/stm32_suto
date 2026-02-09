@@ -5,6 +5,7 @@
 
 #include "spi.h"
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 
@@ -46,42 +47,69 @@ Send 0A;//STOP command stops conversions and puts the device in standby mode;
 Set CS to high;
 */
 
-/*T1:
+
+typedef struct {
+    double resistance;
+    double tempDegC;
+    const uint8_t* pSetupData;
+    const size_t setupDataSize;
+} Sensor_t;
+/*
+T1:
 F+: ain0
 S+: ain1
 S-: ain2
 
 02h: 0x12  (INPMUX)
-07h: 0xF0   (IDACMUX)
-
-T2:
+07h: 0xF0   (IDACMUX) */
+uint8_t t1_setup[6] = {0x42, 0x00,0x12, 0x47, 0x00, 0xF0};
+/*T2:
 F+: ain3
 S+: ain4
 S-: ain5
 
 02h: 0x45  (INPMUX)
-07h: 0xF3   (IDACMUX)
-
-T3:
+07h: 0xF3   (IDACMUX)*/
+uint8_t t2_setup[6] = {0x42, 0x00,0x45, 0x47, 0x00, 0xF3};
+/*T3:
 F+: ain6
 S+: ain7
 S-: ain8
 
 02h: 0x78  (INPMUX)
-07h: 0xF6   (IDACMUX)
-
-T4:
+07h: 0xF6   (IDACMUX)*/
+uint8_t t3_setup[6] = {0x42, 0x00,0x78, 0x47, 0x00, 0xF6};
+/*T4:
 F+: ain9
 S+: ain10
 S-: ain11
 
 02h: 0xAB  (INPMUX)
-07h: 0xF9   (IDACMUX)
+07h: 0xF9   (IDACMUX)*/
+uint8_t t4_setup[6] = {0x42, 0x00,0xAB, 0x47, 0x00, 0xF9};
 
-*/
-volatile bool dataReadyFlag = false;
+volatile Sensor_t sensors[4] = {{
+    .resistance = 0.0, .tempDegC = 0.0,
+    .pSetupData = t1_setup,
+    .setupDataSize = sizeof(t1_setup)
+}, {
+    .resistance = 0.0, .tempDegC = 0.0,
+    .pSetupData = t2_setup,
+    .setupDataSize = sizeof(t2_setup)
+}, {
+    .resistance = 0.0, .tempDegC = 0.0,
+    .pSetupData = t3_setup,
+    .setupDataSize = sizeof(t3_setup)
+}, {
+    .resistance = 0.0, .tempDegC = 0.0,
+    .pSetupData = t4_setup,
+    .setupDataSize = sizeof(t4_setup)
+}};
 
-volatile uint8_t rawData[4][3] = {{0,0,0}}
+volatile bool dataReadyFlag = false; //todo: external interruptban igazra allitani
+
+
+volatile uint8_t rawData[4][3] = {{0,0,0}};
 
 
 void ads124s08_init() {
@@ -103,7 +131,7 @@ void ads124s08_init() {
     HAL_GPIO_WritePin(ADC__CS_GPIO_Port, ADC__CS_Pin, GPIO_PIN_SET);
     //setup
     HAL_GPIO_WritePin(ADC__CS_GPIO_Port, ADC__CS_Pin, GPIO_PIN_RESET);
-    HAL_SPI_Transmit(&hspi3, setupMsg, sizeof(setupMsg), 10u);
+    HAL_SPI_Transmit(&hspi3, setupMsg, sizeof(setupMsg), 10u); //todo: visszaolvasni es ellenorizni
 }
 
 void ads124s08_poll() {
@@ -112,7 +140,7 @@ void ads124s08_poll() {
     static uint32_t last_mux_switch_time = 0u;
 
     const uint8_t readCmd = 0x12;
-    
+
     switch (state) {
         case ADC_SWITCH_INPUT:
 
@@ -129,5 +157,9 @@ void ads124s08_poll() {
         }
     }
 
+
+}
+
+void ads124s08_getTemps(arrayOf4temps[]) {
 
 }

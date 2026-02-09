@@ -11,7 +11,7 @@ typedef struct {
 } PowerLevel_t;
 
 
-void tempctrl_pid_loop(double temps[4]);
+void tempctrl_pid_loop(bool isActive);
 
 
 #endif
