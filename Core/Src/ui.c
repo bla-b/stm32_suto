@@ -1,4 +1,5 @@
 #include "ui.h"
+#include "ads124s08.h"
 #include "buttons.h"
 #include "main.h"
 #include <math.h>
@@ -173,6 +174,7 @@ bool update_UI_str(char* firstLine, char* secondLine, const UiState_t* ui, const
     */
 
     double temps[4] = {69.1, 132.4, 145.5, 111.2};
+    ads124s08_getTemps(temps);
 
     if(ui->setterActive) {
         snprintf(l1, sizeof(l1), ui->setter.setting->printfStr, ui->setter.currentValue);
@@ -197,7 +199,7 @@ bool update_UI_str(char* firstLine, char* secondLine, const UiState_t* ui, const
         switch(ui->mainState) {
             case UI_HOME:
                 if(encoder_get_delta(encoder)%2 == 0) {
-                    snprintf(l1, sizeof(l1), "Set: %.1f*C", setTemp.value); //° karaktert valahogy meg kene oldani
+                    snprintf(l1, sizeof(l1), "Set: %.1f\xB0C", setTemp.value); //° karaktert valahogy meg kene oldani
                     snprintf(l2, sizeof(l2), "%5.1f*C %c %c %c %c", setTemp.value, h1?'1':' ', h2?'2':' ', h3?'3':' ', fan?'F':' ');
                 }
                 else {
