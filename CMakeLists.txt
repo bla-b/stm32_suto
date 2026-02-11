@@ -49,7 +49,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     Core/Src/ui.c
     Core/Src/temp_control.c
     Core/Src/ads124s08.c
-    # Core/Src/i2c_lcd.c
+    Core/Src/i2c_lcd.c      # ki volt kommentezve
 )
 
 # Add include paths

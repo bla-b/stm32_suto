@@ -55,6 +55,8 @@
 
 /* USER CODE BEGIN PV */
 
+I2C_LCD_HandleTypeDef lcd1;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -141,6 +143,17 @@ int main(void)
   MX_SPI3_Init();
   /* USER CODE BEGIN 2 */
 
+  // --- LCD INDÍTÁS ---
+  lcd1.hi2c = &hi2c1;       // Az I2C busz hozzárendelése (fontos: hi2c1)
+  lcd1.address = 0x4E;      // Cím beállítása (Ha nem megy, próbáld: 0x27)
+  lcd_init(&lcd1);          // Kijelző bekapcsolása
+  
+  // Opcionális: Indulási üzenet teszteléshez
+  lcd_gotoxy(&lcd1, 0, 0);
+  lcd_puts(&lcd1, "System Ready");
+  HAL_Delay(1000);          // Várunk 1 mp-et, hogy lásd
+  lcd_clear(&lcd1);         // Letöröljük
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -167,11 +180,15 @@ int main(void)
       
       display_write(firstLine, secondLine);
 
-      /*
-      lcd_puts(&lcd1, firstLine);
-      lcd_gotoxy(&lcd1, 0, 1);
-      lcd_puts(&lcd1, secondLine);
-       */
+      // --- LCD FRISSÍTÉS ---
+      lcd_clear(&lcd1);             // Törlés (fontos a szemetelődés ellen)
+      
+      lcd_gotoxy(&lcd1, 0, 0);      // 1. sor eleje
+      lcd_puts(&lcd1, firstLine);   // 1. szöveg
+      
+      lcd_gotoxy(&lcd1, 0, 1);      // 2. sor eleje
+      lcd_puts(&lcd1, secondLine);  // 2. szöveg
+
     }
     
     // Get the direction (0 = Up, 1 = Down)
