@@ -14,6 +14,7 @@ typedef struct {
     /*Beallitashoz:*/
     const int digits;
     const int decimalPlaces;
+    const double maximum;
     /*Kiirashoz:*/
     const char* printfStr;
     const int firstDigitOffset;

@@ -79,11 +79,11 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : PA15 */
-  GPIO_InitStruct.Pin = GPIO_PIN_15;
+  /*Configure GPIO pin : ADC__DRDY_Pin */
+  GPIO_InitStruct.Pin = ADC__DRDY_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+  HAL_GPIO_Init(ADC__DRDY_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : ADC__CS_Pin */
   GPIO_InitStruct.Pin = ADC__CS_Pin;

@@ -5,7 +5,6 @@
 #include "stm32l5xx_hal_spi.h"
 
 #include "spi.h"
-#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -109,7 +108,8 @@ Sensor_t sensors[4] = {{
     .setupDataSize = sizeof(t4_setup)
 }};
 
-volatile bool dataReadyFlag = false; //todo: external interruptban igazra allitani
+volatile bool dataReadyFlag = false;
+bool allReadingsReadyFlag = false; //ez jelzi ha korbeert a 4 szenzoron
 
 
 static void convert(Sensor_t* sensor, uint8_t rawData[]) {
@@ -138,6 +138,7 @@ void ads124s08_init() {
     //setup
     HAL_GPIO_WritePin(ADC__CS_GPIO_Port, ADC__CS_Pin, GPIO_PIN_RESET);
     HAL_SPI_Transmit(&hspi3, setupMsg, sizeof(setupMsg), 10u); //todo: visszaolvasni es ellenorizni
+    HAL_GPIO_WritePin(ADC__CS_GPIO_Port, ADC__CS_Pin, GPIO_PIN_SET);
 }
 
 void ads124s08_poll() {
@@ -152,14 +153,18 @@ void ads124s08_poll() {
 
     switch (state) {
         case ADC_SWITCH_INPUT:
+            HAL_GPIO_WritePin(ADC__CS_GPIO_Port, ADC__CS_Pin, GPIO_PIN_RESET);
             HAL_SPI_Transmit(&hspi3, sensors[selNum].pSetupData, sensors[selNum].setupDataSize, 10u);
+            HAL_GPIO_WritePin(ADC__CS_GPIO_Port, ADC__CS_Pin, GPIO_PIN_SET);
             last_mux_switch_time = HAL_GetTick();
             state = ADC_WAIT_FILTER_SETTLE;
         break;
         case ADC_WAIT_FILTER_SETTLE:
             if(HAL_GetTick() - last_mux_switch_time > FILTER_SETTLE_TIME_MS) {
                 dataReadyFlag = false; //biztos ami biztos
+                HAL_GPIO_WritePin(ADC__CS_GPIO_Port, ADC__CS_Pin, GPIO_PIN_RESET);
                 HAL_SPI_Transmit(&hspi3, &startCmd, 1, 10u);
+                HAL_GPIO_WritePin(ADC__CS_GPIO_Port, ADC__CS_Pin, GPIO_PIN_SET);
                 state = ADC_WAIT_FOR_DREADY;
             }
 
@@ -167,11 +172,15 @@ void ads124s08_poll() {
         case ADC_WAIT_FOR_DREADY:
             if(dataReadyFlag) { //read data
                 dataReadyFlag = false;
+                HAL_GPIO_WritePin(ADC__CS_GPIO_Port, ADC__CS_Pin, GPIO_PIN_RESET);
                 HAL_SPI_Transmit(&hspi3, &readCmd, 1, 10u);
                 HAL_SPI_Receive(&hspi3, rawData, 3, 10u);
+                HAL_GPIO_WritePin(ADC__CS_GPIO_Port, ADC__CS_Pin, GPIO_PIN_SET);
                 convert(&sensors[selNum], rawData);
                 state = ADC_SWITCH_INPUT;
                 selNum = (selNum + 1) % 4;
+                if(selNum == 0)
+                    allReadingsReadyFlag = true;
         }
     }
 }
@@ -179,5 +188,22 @@ void ads124s08_poll() {
 void ads124s08_getTemps(double arrayOf4temps[]) {
     for(int i = 0; i < 4; i++) {
         arrayOf4temps[i] = sensors[i].tempDegC;
+    }
+}
+
+bool ads124s08_readingsReadyCheck() {
+    if(allReadingsReadyFlag == true) {
+        allReadingsReadyFlag = false;
+        return true;
+    }
+    return false;
+}
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+    /* Check if the interrupt came from the correct pin */
+    if (GPIO_Pin == ADC__DRDY_Pin) 
+    {
+        dataReadyFlag = true; 
     }
 }

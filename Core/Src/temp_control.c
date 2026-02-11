@@ -91,7 +91,7 @@ void tempctrl_pid_loop(bool isActive) {
     //calculate error:
     double avg = temps[0] + temps[1] + temps[2] + temps[3];
     avg /= 4.0;
-    error = avg - setTemp;
+    error = setTemp - avg;
     //calculate delta t:
     dt = (time - lastTime) / 1000.0; //elapsed time in s
     if(dt > 2.0)
@@ -140,7 +140,7 @@ void tempctrl_pid_loop(bool isActive) {
     if(maxTdiff > FAN_ON_T_DIFF_THRESHOLD && !fanIsOn) {
         HAL_GPIO_WritePin(FAN_GPIO_Port, FAN_Pin, GPIO_PIN_SET);
     }
-    else if(maxTdiff > FAN_OFF_T_DIFF_THRESHOLD && fanIsOn) {
+    else if(maxTdiff < FAN_OFF_T_DIFF_THRESHOLD && fanIsOn) {
         HAL_GPIO_WritePin(FAN_GPIO_Port, FAN_Pin, GPIO_PIN_RESET);
     }
 

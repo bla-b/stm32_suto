@@ -156,8 +156,8 @@ int main(void)
     }
 
     ads124s08_poll();
-    if(true) {
-      tempctrl_pid_loop(isActive); //todo: csak akkor kell meghivni ha korbeert a 4 szenzoron
+    if(ads124s08_readingsReadyCheck()) {
+      tempctrl_pid_loop(isActive); //csak akkor kell meghivni ha korbeert a 4 szenzoron
     }
 
     //update ui

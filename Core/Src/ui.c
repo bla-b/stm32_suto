@@ -10,6 +10,7 @@
 static Setting_t setTemp = {
     .name = "",
     .value = 81.5,
+    .maximum = 200.0,
     .digits = 4,
     .decimalPlaces = 1,
     .printfStr = "Set: %5.1f*C",
@@ -20,6 +21,7 @@ static Setting_t pid_settings[3] = {
     {
         .name = "P",
         .value = 0.1,
+        .maximum = 10.0,
         .digits = 4,
         .decimalPlaces = 3,
         .printfStr = "P: %5.3f",
@@ -28,6 +30,7 @@ static Setting_t pid_settings[3] = {
     {
         .name = "I",
         .value = 0.0,
+        .maximum = 10.0,
         .digits = 4,
         .decimalPlaces = 3,
         .printfStr = "I: %5.3f",
@@ -36,6 +39,7 @@ static Setting_t pid_settings[3] = {
     {
         .name = "D",
         .value = 0.0,
+        .maximum = 10.0,
         .digits = 4,
         .decimalPlaces = 3,
         .printfStr = "D: %5.3f",
@@ -86,6 +90,9 @@ static bool setter_poll(SetterState_t *st, Encoder_t *encoder, Button_t* btn) {
             if(st->currentDigitNum >= 0) {
                 st->currentDigitVal = (st->intValue / ten_to_the_pow(st->currentDigitNum)) % 10;
                 st->intValue -= st->currentDigitVal * ten_to_the_pow(st->currentDigitNum);
+            }
+            else if(st->currentValue > st->setting->maximum) { //legvegen, ha nagyobb lenne mint a maximum
+                st->currentValue = st->setting->maximum;
             }
 
             encoder_zero(encoder);
