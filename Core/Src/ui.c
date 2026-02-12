@@ -14,7 +14,7 @@ static Setting_t setTemp = {
     .maximum = 200.0,
     .digits = 4,
     .decimalPlaces = 1,
-    .printfStr = "Set: %5.1f*C",
+    .printfStr = "Set: %5.1f\xDF" "C",
     .firstDigitOffset = 5
 };
 
@@ -166,15 +166,17 @@ bool update_UI_str(char* firstLine, char* secondLine, const UiState_t* ui, const
     char l2[17];
     bool h1, h2, h3, fan; //to do: updatelni ezeket
     h1 = h2 = h3 = fan = true;
-    /*
+    
     h1 = (HAL_GPIO_ReadPin(H1_GPIO_Port, H1_Pin) == GPIO_PIN_SET);
     h2 = (HAL_GPIO_ReadPin(H2_GPIO_Port, H2_Pin) == GPIO_PIN_SET);
     h3 = (HAL_GPIO_ReadPin(H3_GPIO_Port, H3_Pin) == GPIO_PIN_SET);
     fan = (HAL_GPIO_ReadPin(FAN_GPIO_Port, FAN_Pin) == GPIO_PIN_SET);
-    */
+    
 
     double temps[4] = {69.1, 132.4, 145.5, 111.2};
     ads124s08_getTemps(temps);
+    double averageTemp = temps[0] + temps[1] + temps[2] + temps[3];
+    averageTemp /= 4.0;
 
     if(ui->setterActive) {
         snprintf(l1, sizeof(l1), ui->setter.setting->printfStr, ui->setter.currentValue);
@@ -199,12 +201,12 @@ bool update_UI_str(char* firstLine, char* secondLine, const UiState_t* ui, const
         switch(ui->mainState) {
             case UI_HOME:
                 if(encoder_get_delta(encoder)%2 == 0) {
-                    snprintf(l1, sizeof(l1), "Set: %.1f\xB0C", setTemp.value); //° karaktert valahogy meg kene oldani
-                    snprintf(l2, sizeof(l2), "%5.1f*C %c %c %c %c", setTemp.value, h1?'1':' ', h2?'2':' ', h3?'3':' ', fan?'F':' ');
+                    snprintf(l1, sizeof(l1), "Set: %.1f%cC", setTemp.value, 0xDF); //° karaktert valahogy meg kene oldani
+                    snprintf(l2, sizeof(l2), "%5.1f%cC %c %c %c %c", averageTemp, 0xDF, h1?'1':' ', h2?'2':' ', h3?'3':' ', fan?'F':' ');
                 }
                 else {
-                    snprintf(l1, sizeof(l1), "%5.1f*C  %5.1f*C", temps[0], temps[1]);
-                    snprintf(l2, sizeof(l2), "%5.1f*C  %5.1f*C", temps[2], temps[3]);
+                    snprintf(l1, sizeof(l1), "%5.1f%cC  %5.1f%cC", temps[0], 0xDF, temps[1], 0xDF);
+                    snprintf(l2, sizeof(l2), "%5.1f%cC  %5.1f%cC", temps[2], 0xDF , temps[3], 0xDF);
                 }
                 break;
             case UI_MENU:

@@ -5,8 +5,10 @@
 #include "stm32l5xx_hal_spi.h"
 
 #include "spi.h"
+#include "usbd_cdc_if.h"
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 
 
 /* Eredeti:
@@ -90,6 +92,9 @@ S-: ain11
 07h: 0xF9   (IDACMUX)*/
 uint8_t t4_setup[6] = {0x42, 0x00,0xAB, 0x47, 0x00, 0xF9};
 
+uint8_t setupReadCmd[2] = {0x22, 0x05};
+
+
 Sensor_t sensors[4] = {{
     .resistance = 0.0, .tempDegC = 0.0,
     .pSetupData = t1_setup,
@@ -113,13 +118,15 @@ bool allReadingsReadyFlag = false; //ez jelzi ha korbeert a 4 szenzoron
 
 
 static void convert(Sensor_t* sensor, uint8_t rawData[]) {
-    uint32_t intData = rawData[0] + (rawData[1] << 4) + (rawData[2] << 8);
+    //uint32_t intData = rawData[0] + (rawData[1] << 4) + (rawData[2] << 8);
+    int32_t intData = (int32_t)((rawData[0] << 24) | (rawData[1] << 16) | (rawData[2] << 8)) >> 8;
     sensor->resistance = R_REF_VAL * (intData / (4.0 * (0x01 << 23)));
     sensor->tempDegC = (sensor->resistance - 100.0) / (100.0 * 0.00385);//todo: pontosabban
 }
 
 void ads124s08_init() {
     const uint8_t resetCmd = 0x06;
+    uint8_t setupReadBuffer[6] = {6,6,6,6,6,6};
     const uint8_t setupMsg[8] = {
         0x42,// WREG starting at 02h address
         05,// Write to 6 registers
@@ -135,10 +142,19 @@ void ads124s08_init() {
     HAL_GPIO_WritePin(ADC__CS_GPIO_Port, ADC__CS_Pin, GPIO_PIN_RESET);
     HAL_SPI_Transmit(&hspi3, &resetCmd, 1, 10u);
     HAL_GPIO_WritePin(ADC__CS_GPIO_Port, ADC__CS_Pin, GPIO_PIN_SET);
+    HAL_Delay(5);
     //setup
     HAL_GPIO_WritePin(ADC__CS_GPIO_Port, ADC__CS_Pin, GPIO_PIN_RESET);
     HAL_SPI_Transmit(&hspi3, setupMsg, sizeof(setupMsg), 10u); //todo: visszaolvasni es ellenorizni
+    HAL_SPI_Transmit(&hspi3, setupReadCmd, sizeof(setupReadCmd), 10u);
+
+    HAL_SPI_Receive(&hspi3, setupReadBuffer, 6, 10u);
+
     HAL_GPIO_WritePin(ADC__CS_GPIO_Port, ADC__CS_Pin, GPIO_PIN_SET);
+
+    char msg[50];
+    snprintf(msg, sizeof(msg), "%x\n%x\n%x\n%x\n%x\n%x\n", setupReadBuffer[0], setupReadBuffer[1], setupReadBuffer[2], setupReadBuffer[3], setupReadBuffer[4], setupReadBuffer[5]);
+    //CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
 }
 
 void ads124s08_poll() {
@@ -170,7 +186,7 @@ void ads124s08_poll() {
 
         break;
         case ADC_WAIT_FOR_DREADY:
-            if(dataReadyFlag) { //read data
+            if(HAL_GPIO_ReadPin(ADC__DRDY_GPIO_Port, ADC__DRDY_Pin) == GPIO_PIN_RESET) { //read data
                 dataReadyFlag = false;
                 HAL_GPIO_WritePin(ADC__CS_GPIO_Port, ADC__CS_Pin, GPIO_PIN_RESET);
                 HAL_SPI_Transmit(&hspi3, &readCmd, 1, 10u);

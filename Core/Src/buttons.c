@@ -3,7 +3,7 @@
 #define DEBOUNCE_TIME_MS  (20)
 #define LONG_PRESS_TIME_MS (1500)
 
-#define ENCODER_PRESCALER (4) //a timer 4-et szamol kattanasonkent
+#define ENCODER_PRESCALER (-2) //a timer 2-et szamol kattanasonkent
 
 void button_poll(Button_t* btn) {
     bool currentlyPressed = (btn -> activeState == HAL_GPIO_ReadPin(btn->port, btn->pin));

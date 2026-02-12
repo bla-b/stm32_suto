@@ -76,6 +76,7 @@ void tempctrl_pid_loop(bool isActive) {
         HAL_GPIO_WritePin(H2_GPIO_Port, H2_Pin, GPIO_PIN_RESET);
         HAL_GPIO_WritePin(H3_GPIO_Port, H3_Pin, GPIO_PIN_RESET);
         HAL_GPIO_WritePin(FAN_GPIO_Port, FAN_Pin, GPIO_PIN_RESET);
+        lastPwrOut = 0;
         return;
     }
 
@@ -109,7 +110,7 @@ void tempctrl_pid_loop(bool isActive) {
     integral = (integral < -1000.0) ? -1000.0 : integral;
 
     //calculate output:
-    pwrOut = (int)(P * error + I * integral + D * derivative); //ezt lehet meg kell majd szorozni mondjuk 1000-rel
+    pwrOut = (int)((P * error + I * integral + D * derivative) * 1000.0); //ezt lehet meg kell majd szorozni mondjuk 1000-rel
 
     //find best power level
     if(ABS(pwrOut - lastPwrOut) > OUT_PWR_HYSTERESYS) { //hiszterizis, hogy ne kapcsolgassanak feleslegesen a relek, majd kiderul kell-e

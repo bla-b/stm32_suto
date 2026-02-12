@@ -21,6 +21,7 @@
 #include "i2c.h"
 #include "icache.h"
 #include "spi.h"
+#include "stm32l5xx_hal.h"
 #include "tim.h"
 #include "usb_device.h"
 #include "gpio.h"
@@ -87,7 +88,7 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
 
-  Button_t start_stop_btn = {
+    Button_t start_stop_btn = {
     .port = START_BTN_GPIO_Port,
     .pin = START_BTN_Pin,
     .activeState = GPIO_PIN_SET,
@@ -124,7 +125,7 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-  ads124s08_init();
+  
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -142,12 +143,12 @@ int main(void)
   MX_I2C1_Init();
   MX_SPI3_Init();
   /* USER CODE BEGIN 2 */
-
+  HAL_TIM_Encoder_Start(&htim2, TIM_CHANNEL_ALL);
+  ads124s08_init();
   // --- LCD INDÍTÁS ---
   lcd1.hi2c = &hi2c1;       // Az I2C busz hozzárendelése (fontos: hi2c1)
   lcd1.address = 0x4E;      // Cím beállítása (Ha nem megy, próbáld: 0x27)
   lcd_init(&lcd1);          // Kijelző bekapcsolása
-  
   // Opcionális: Indulási üzenet teszteléshez
   lcd_gotoxy(&lcd1, 0, 0);
   lcd_puts(&lcd1, "System Ready");
@@ -178,7 +179,7 @@ int main(void)
     //update display (csak ha valami valtozott)
     if(update_UI_str(firstLine, secondLine, &uiState, &encoder) == true) {
       
-      display_write(firstLine, secondLine);
+      //display_write(firstLine, secondLine);
 
       // --- LCD FRISSÍTÉS ---
       lcd_clear(&lcd1);             // Törlés (fontos a szemetelődés ellen)
