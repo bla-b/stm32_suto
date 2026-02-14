@@ -89,6 +89,24 @@ void tempctrl_pid_loop(bool isActive) {
     double temps[4];
     ads124s08_getTemps(temps);
 
+    // --- VÉSZLEÁLLÍTÓ (TÚLMELEGEDÉS VÉDELEM) ---
+    // Végignézzük mind a 4 szenzort.
+    for(int i = 0; i < 4; i++) {
+        if(temps[i] > 200.0) { // 250 fok felett vészleállítás! Ezt átírhatod a sütőd max limitjére.
+            
+            // Minden fűtést és ventilátort azonnal lekapcsolunk!
+            HAL_GPIO_WritePin(H1_GPIO_Port, H1_Pin, GPIO_PIN_RESET);
+            HAL_GPIO_WritePin(H2_GPIO_Port, H2_Pin, GPIO_PIN_RESET);
+            HAL_GPIO_WritePin(H3_GPIO_Port, H3_Pin, GPIO_PIN_RESET);
+            HAL_GPIO_WritePin(FAN_GPIO_Port, FAN_Pin, GPIO_PIN_RESET);
+            
+            lastPwrOut = 0; // Nullázzuk a memóriát is
+            
+            return; // KILÉPÜNK! A PID számítás már le sem fut, a relék kikapcsolva maradnak.
+        }
+    }
+    // -------------------------------------------
+
     //calculate error:
     double avg = temps[0] + temps[1] + temps[2] + temps[3];
     avg /= 4.0;

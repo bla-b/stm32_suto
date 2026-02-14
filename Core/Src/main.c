@@ -200,6 +200,10 @@ int main(void)
       HAL_GPIO_TogglePin(STA_LED_GPIO_Port, STA_LED_Pin);
       u32BlinkTimer = HAL_GetTick();
     }
+
+    // Frissítjük a Watchdog-ot                       // CubeMx ben be kell állítani a watchdogot
+    //HAL_IWDG_Refresh(&hiwdg); 
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
