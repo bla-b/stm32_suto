@@ -31,6 +31,7 @@ set(MX_Application_Src
     ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/gpio.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/i2c.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/icache.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/iwdg.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/spi.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/tim.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../../Core/Src/stm32l5xx_it.c
@@ -62,6 +63,7 @@ set(STM32_Drivers_Src
     ${CMAKE_CURRENT_SOURCE_DIR}/../../Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_pwr_ex.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../../Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_cortex.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../../Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_icache.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_iwdg.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../../Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_spi.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../../Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_spi_ex.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../../Drivers/STM32L5xx_HAL_Driver/Src/stm32l5xx_hal_tim.c
