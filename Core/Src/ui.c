@@ -5,6 +5,11 @@
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
+/* Gemini:
+Revised Rating: 1/10
+Verdict: This code works by accident. It is inefficient, buggy, and dangerous. If this is for a heater
+(which the PID suggests), I wouldn't trust it to toast bread, let alone control an industrial process.
+*/
 
 #define MENU_OPTIONS_NUM (2)
 
@@ -48,12 +53,16 @@ static Setting_t pid_settings[3] = {
     }
 };
 
-static int ten_to_the_pow(int exponent) {
+static inline int ten_to_the_pow(int exponent) {
     int num = 1;
     for(int i = 0; i < exponent; i++) {
         num *= 10;
     }
     return num;
+}
+
+static inline int pos_mod(int x, int n) {
+    return (x % n + n) % n;
 }
 
 static void setter_begin(SetterState_t *st, Setting_t *setting, Encoder_t *encoder)
@@ -134,11 +143,11 @@ void update_UI_state(UiState_t* ui, Encoder_t* encoder, Button_t* encoderBtn) {
                 break;
             case UI_MENU:
                 if(button_check_event(encoderBtn, BTN_RELEASED)) {
-                    if(encoder_get_delta(encoder) % MENU_OPTIONS_NUM == 0) { //PID
+                    if(pos_mod(encoder_get_delta(encoder), MENU_OPTIONS_NUM) == 0) { //PID
                         ui->mainState = UI_MENU_PID;
                         encoder_zero(encoder);
                     }
-                    if(encoder_get_delta(encoder) % MENU_OPTIONS_NUM == 1) { //Back
+                    if(pos_mod(encoder_get_delta(encoder), MENU_OPTIONS_NUM) == 1) { //Back
                         ui->mainState = UI_HOME;
                         encoder_zero(encoder);
                     }
@@ -146,7 +155,7 @@ void update_UI_state(UiState_t* ui, Encoder_t* encoder, Button_t* encoderBtn) {
                 break;
             case UI_MENU_PID:
                 if(button_check_event(encoderBtn, BTN_RELEASED)) {
-                    int selected = encoder_get_delta(encoder) % 4;
+                    int selected = pos_mod(encoder_get_delta(encoder), 4);
                     if(selected == 3) {  //Back
                         ui->mainState = UI_MENU;
                         encoder_zero(encoder);
@@ -201,7 +210,7 @@ bool update_UI_str(char* firstLine, char* secondLine, const UiState_t* ui, const
         switch(ui->mainState) {
             case UI_HOME:
                 if(encoder_get_delta(encoder)%2 == 0) {
-                    snprintf(l1, sizeof(l1), "Set: %.1f%cC", setTemp.value, 0xDF); //° karaktert valahogy meg kene oldani
+                    snprintf(l1, sizeof(l1), "Set: %.1f%cC", setTemp.value, 0xDF); //° karaktert
                     snprintf(l2, sizeof(l2), "%5.1f%cC %c %c %c %c", averageTemp, 0xDF, h1?'1':' ', h2?'2':' ', h3?'3':' ', fan?'F':' ');
                 }
                 else {
@@ -218,14 +227,14 @@ bool update_UI_str(char* firstLine, char* secondLine, const UiState_t* ui, const
                     l2[0] = '>';
                 break;
             case UI_MENU_PID:
-                int selected = encoder_get_delta(encoder) % 4;
-                int next = (selected + 1) % 4;
+                int selected = pos_mod(encoder_get_delta(encoder), 4);
+                int next = pos_mod((selected + 1), 4);
                 snprintf(l1, sizeof(l1), ">%s", selected == 3 ? "Back" : pid_settings[selected].name);
                 snprintf(l2, sizeof(l2), " %s", next == 3 ? "Back" : pid_settings[next].name);
         }
     }
 
-    if(!(strcmp(l1, firstLine) || strcmp(l2, secondLine)))
+    if(strcmp(l1, firstLine) == 0 && strcmp(l2, secondLine) == 0)
         return false;
     strcpy(firstLine, l1);
     strcpy(secondLine, l2);

@@ -6,6 +6,16 @@
 #include "i2c_lcd.h"
 #include "main.h"
 
+
+//gemini lcd init fix
+void lcd_write_nibble(I2C_LCD_HandleTypeDef *lcd, uint8_t nibble, uint8_t rs) {
+    uint8_t data = nibble | rs | 0x08; // 0x08 keeps backlight ON
+    uint8_t data_t[2];
+    data_t[0] = data | 0x04;  // EN=1
+    data_t[1] = data;         // EN=0
+    HAL_I2C_Master_Transmit(lcd->hi2c, lcd->address, data_t, 2, 100);
+}
+
 /**
  * @brief  Sends a command to the LCD.
  * @param  lcd: Pointer to the LCD handle
@@ -98,6 +108,22 @@ void lcd_gotoxy(I2C_LCD_HandleTypeDef *lcd, int col, int row)
  */
 void lcd_init(I2C_LCD_HandleTypeDef *lcd)
 {
+    //gemini fix:
+    HAL_Delay(100); // Increase delay to 100ms for power stabilization
+
+    // Force initialization sequence (Send 0x30 three times as nibbles)
+    lcd_write_nibble(lcd, 0x30, 0); 
+    HAL_Delay(5);
+    lcd_write_nibble(lcd, 0x30, 0);
+    HAL_Delay(1);
+    lcd_write_nibble(lcd, 0x30, 0);
+    HAL_Delay(10);
+
+    // SWITCH TO 4-BIT MODE: Send 0x20 as a SINGLE nibble
+    lcd_write_nibble(lcd, 0x20, 0); 
+    HAL_Delay(10);
+
+    /* eredeti:
     HAL_Delay(50);  // Wait for LCD power-up
     lcd_send_cmd(lcd, 0x30);  // Wake up command
     HAL_Delay(5);
@@ -106,7 +132,7 @@ void lcd_init(I2C_LCD_HandleTypeDef *lcd)
     lcd_send_cmd(lcd, 0x30);  // Wake up command
     HAL_Delay(10);
     lcd_send_cmd(lcd, 0x20);  // Set to 4-bit mode
-    HAL_Delay(10);
+    HAL_Delay(10); */
 
     // LCD configuration commands
     lcd_send_cmd(lcd, 0x28);  // 4-bit mode, 2 lines, 5x8 font

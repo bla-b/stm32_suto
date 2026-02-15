@@ -125,7 +125,8 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-  
+  //gemini lcd fix, ha nem kell ki lehet venni:
+  HAL_Delay(100);
   /* USER CODE END Init */
 
   /* Configure the system clock */
