@@ -152,8 +152,8 @@ void ads124s08_init() {
 
     HAL_GPIO_WritePin(ADC__CS_GPIO_Port, ADC__CS_Pin, GPIO_PIN_SET);
 
-    char msg[50];
-    snprintf(msg, sizeof(msg), "%x\n%x\n%x\n%x\n%x\n%x\n", setupReadBuffer[0], setupReadBuffer[1], setupReadBuffer[2], setupReadBuffer[3], setupReadBuffer[4], setupReadBuffer[5]);
+    //char msg[50];
+    //snprintf(msg, sizeof(msg), "%x\n%x\n%x\n%x\n%x\n%x\n", setupReadBuffer[0], setupReadBuffer[1], setupReadBuffer[2], setupReadBuffer[3], setupReadBuffer[4], setupReadBuffer[5]);
     //CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
 }
 
@@ -166,6 +166,7 @@ void ads124s08_poll() {
     const uint8_t startCmd = 0x08;
 
     uint8_t rawData[3] = {0};
+    bool ready = false;
 
     switch (state) {
         case ADC_SWITCH_INPUT:
@@ -186,7 +187,8 @@ void ads124s08_poll() {
 
         break;
         case ADC_WAIT_FOR_DREADY:
-            if(HAL_GPIO_ReadPin(ADC__DRDY_GPIO_Port, ADC__DRDY_Pin) == GPIO_PIN_RESET) { //read data
+            ready = HAL_GPIO_ReadPin(ADC__DRDY_GPIO_Port, ADC__DRDY_Pin) == GPIO_PIN_RESET;
+            if(dataReadyFlag) { //read data
                 dataReadyFlag = false;
                 HAL_GPIO_WritePin(ADC__CS_GPIO_Port, ADC__CS_Pin, GPIO_PIN_RESET);
                 HAL_SPI_Transmit(&hspi3, &readCmd, 1, 10u);
@@ -214,12 +216,13 @@ bool ads124s08_readingsReadyCheck() {
     }
     return false;
 }
-
+/*
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-    /* Check if the interrupt came from the correct pin */
+    //Check if the interrupt came from the correct pin
     if (GPIO_Pin == ADC__DRDY_Pin) 
     {
         dataReadyFlag = true; 
     }
 }
+*/

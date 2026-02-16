@@ -39,7 +39,7 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-
+extern USBD_HandleTypeDef hUsbDeviceFS;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -68,9 +68,13 @@ void display_write(char* firstline, char* secondline)
 {
   if(firstline == NULL || secondline == NULL || strlen(firstline) > 16 || strlen(secondline) > 16)
     Error_Handler();
-  char msg[50];
-  snprintf(msg, sizeof(msg), "\n\n\n\n\r%s\r%s\r", firstline, secondline);
-  CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
+  /* Check if USB is connected and configured by the host */
+  if (hUsbDeviceFS.dev_state == USBD_STATE_CONFIGURED) 
+  {
+    char msg[50];
+    snprintf(msg, sizeof(msg), "\n\n\n\n\r%s\r%s\r", firstline, secondline);
+    CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
+  }
 }
 /* USER CODE END PFP */
 
@@ -91,7 +95,7 @@ int main(void)
     Button_t start_stop_btn = {
     .port = START_BTN_GPIO_Port,
     .pin = START_BTN_Pin,
-    .activeState = GPIO_PIN_SET,
+    .activeState = GPIO_PIN_RESET,
     .state = BUTTON_INACTIVE,
     .event = BTN_NO_EVENT,
     .last_time = 0u
@@ -161,7 +165,7 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  while (1)
+  while (1) //todo: watchdog prescaler!!!!!
   {
     button_poll(&start_stop_btn);
     button_poll(&encoder_btn);
@@ -184,8 +188,17 @@ int main(void)
       //display_write(firstLine, secondLine);
 
       // --- LCD FRISSÍTÉS ---
-      lcd_clear(&lcd1);             // Törlés (fontos a szemetelődés ellen)
-      
+      //lcd_clear(&lcd1);             // Törlés (fontos a szemetelődés ellen)
+      //clear helyett:
+      int firstLength = strlen(firstLine);
+      int secondLength = strlen(secondLine);
+      for(int i = firstLength; i < sizeof(firstLine) - 1; i++)
+        firstLine[i] = ' ';
+      firstLine[sizeof(firstLine) - 1] = '\n';
+      for(int i = secondLength; i < sizeof(secondLine) - 1; i++)
+        secondLine[i] = ' ';
+      secondLine[sizeof(secondLine) - 1] = '\n';
+
       lcd_gotoxy(&lcd1, 0, 0);      // 1. sor eleje
       lcd_puts(&lcd1, firstLine);   // 1. szöveg
       
@@ -199,7 +212,7 @@ int main(void)
 
     //Blinker
     if(HAL_GetTick() - u32BlinkTimer > 500u) {
-      HAL_GPIO_TogglePin(STA_LED_GPIO_Port, STA_LED_Pin);
+      //HAL_GPIO_TogglePin(STA_LED_GPIO_Port, STA_LED_Pin);
       u32BlinkTimer = HAL_GetTick();
     }
 
@@ -224,7 +237,7 @@ void SystemClock_Config(void)
 
   /** Configure the main internal regulator output voltage
   */
-  if (HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE0) != HAL_OK)
+  if (HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1) != HAL_OK)
   {
     Error_Handler();
   }
@@ -232,14 +245,16 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSI|RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI48|RCC_OSCILLATORTYPE_LSI
+                              |RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+  RCC_OscInitStruct.HSI48State = RCC_HSI48_ON;
   RCC_OscInitStruct.LSIDiv = RCC_LSI_DIV1;
   RCC_OscInitStruct.LSIState = RCC_LSI_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLM = 8;
-  RCC_OscInitStruct.PLL.PLLN = 55;
+  RCC_OscInitStruct.PLL.PLLM = 4;
+  RCC_OscInitStruct.PLL.PLLN = 16;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV7;
   RCC_OscInitStruct.PLL.PLLQ = RCC_PLLQ_DIV2;
   RCC_OscInitStruct.PLL.PLLR = RCC_PLLR_DIV2;
@@ -257,14 +272,22 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_3) != HAL_OK)
   {
     Error_Handler();
   }
 }
 
 /* USER CODE BEGIN 4 */
-
+void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin)
+{
+    /* Check if the interrupt came from the correct pin */
+    if (GPIO_Pin == ADC__DRDY_Pin) 
+    {
+        dataReadyFlag = true; 
+        HAL_GPIO_TogglePin(STA_LED_GPIO_Port, STA_LED_Pin);
+    }
+}
 /* USER CODE END 4 */
 
 /**

@@ -1,6 +1,6 @@
 #include "buttons.h"
 
-#define DEBOUNCE_TIME_MS  (20)
+#define DEBOUNCE_TIME_MS  (50)
 #define LONG_PRESS_TIME_MS (1500)
 
 #define ENCODER_PRESCALER (-2) //a timer 2-et szamol kattanasonkent
