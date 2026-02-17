@@ -9,6 +9,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <math.h>
 
 
 /* Eredeti:
@@ -49,6 +50,11 @@ Send 0A;//STOP command stops conversions and puts the device in standby mode;
 Set CS to high;
 */
 
+// PT100 Constants (DIN/IEC 60751)
+#define PT100_R0  100.0f
+#define PT100_A   3.9083e-3f
+#define PT100_B   -5.775e-7f
+
 #define FILTER_SETTLE_TIME_MS (69)
 #define R_REF_VAL (1620.0)
 
@@ -57,6 +63,9 @@ typedef struct {
     double tempDegC;
     const uint8_t* pSetupData;
     const size_t setupDataSize;
+    // Calibration factors (Default: slope=1.0, offset=0.0)
+    float calSlope; 
+    float calOffset;
 } Sensor_t;
 /*
 T1:
@@ -97,18 +106,22 @@ uint8_t setupReadCmd[2] = {0x22, 0x05};
 
 Sensor_t sensors[4] = {{
     .resistance = 0.0, .tempDegC = 0.0,
+    .calSlope = 1.0f, .calOffset = 0.0f, // Change these after calibration
     .pSetupData = t1_setup,
     .setupDataSize = sizeof(t1_setup)
 }, {
     .resistance = 0.0, .tempDegC = 0.0,
+    .calSlope = 1.0f, .calOffset = 0.0f,
     .pSetupData = t2_setup,
     .setupDataSize = sizeof(t2_setup)
 }, {
     .resistance = 0.0, .tempDegC = 0.0,
+    .calSlope = 1.0f, .calOffset = 0.0f,
     .pSetupData = t3_setup,
     .setupDataSize = sizeof(t3_setup)
 }, {
     .resistance = 0.0, .tempDegC = 0.0,
+    .calSlope = 1.0f, .calOffset = 0.0f,
     .pSetupData = t4_setup,
     .setupDataSize = sizeof(t4_setup)
 }};
@@ -117,11 +130,41 @@ volatile bool dataReadyFlag = false;
 bool allReadingsReadyFlag = false; //ez jelzi ha korbeert a 4 szenzoron
 
 
-static void convert(Sensor_t* sensor, uint8_t rawData[]) {
+/*static void convert(Sensor_t* sensor, uint8_t rawData[]) {
     //uint32_t intData = rawData[0] + (rawData[1] << 4) + (rawData[2] << 8);
     int32_t intData = (int32_t)((rawData[0] << 24) | (rawData[1] << 16) | (rawData[2] << 8)) >> 8;
     sensor->resistance = R_REF_VAL * (intData / (4.0 * (0x01 << 23)));
     sensor->tempDegC = (sensor->resistance - 100.0) / (100.0 * 0.00385);//todo: pontosabban
+}*/
+
+//uj, gemini vibe kodolt
+static void convert(Sensor_t* sensor, uint8_t rawData[]) {
+    // 1. Convert Raw Bytes to Signed Integer
+    int32_t intData = (int32_t)((rawData[0] << 24) | (rawData[1] << 16) | (rawData[2] << 8));
+    intData = intData >> 8; // Sign extension 
+
+    // 2. Convert to Raw Resistance
+    // Formula: R_rtd = R_ref * (Code / (Gain * 2^23))
+    // Gain is 4, R_REF_VAL is 1620.0
+    double raw_R = R_REF_VAL * ((double)intData / (4.0 * 8388608.0));
+
+    // 3. Apply Calibration (Fixes wire offset and Resistor tolerance)
+    sensor->resistance = (raw_R * sensor->calSlope) + sensor->calOffset;
+
+    // 4. Convert Resistance to Temperature (Callendar-Van Dusen)
+    // Using float sqrtf for speed on STM32L5 (FPU)
+    double R = sensor->resistance;
+    
+    // Check for broken sensor (Infinite resistance or 0)
+    if (R < 10.0 || R > 400.0) {
+        sensor->tempDegC = -999.0; // Error code
+        return;
+    }
+
+    // Quadratic Formula: T = (-A + sqrt(A^2 - 4B(1 - R/R0))) / 2B
+    double discriminant = (PT100_A * PT100_A) - 4.0f * PT100_B * (1.0f - (R / PT100_R0));
+    
+    sensor->tempDegC = (-PT100_A + sqrt(discriminant)) / (2.0f * PT100_B);
 }
 
 void ads124s08_init() {
