@@ -75,20 +75,47 @@ void display_write(char* firstline, char* secondline)
     snprintf(msg, sizeof(msg), "\n\n\n\n\r%s\r%s\r", firstline, secondline);
     CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
   }
-}
+}/*
 void usb_log() {
   double temps[4] = {0};
   double res[4] = {0};
   char buffer[50];
-  char* end = "\n\n\n";
+  char* end = "\n\n\n\r";
+  ads124s08_getTemps(temps);
+  ads124s08_getResistances(res);
   if (hUsbDeviceFS.dev_state == USBD_STATE_CONFIGURED) 
   {
     for(int i = 0; i < 4; i++) {
       snprintf(buffer, sizeof(buffer), "%d.: %f C, resistance: %f \n", i + 1, temps[i], res[i]);
       CDC_Transmit_FS((uint8_t*)buffer, strlen(buffer));
     }
-    CDC_Transmit_FS((uint8_t*)end, strlen(end));
+    //CDC_Transmit_FS((uint8_t*)end, strlen(end));
   }
+}*/
+void usb_log() {
+    double temps[4] = {0};
+    double res[4] = {0};
+    // 1. Increase buffer size to hold ALL lines (approx 60 chars per line * 4 lines + margin)
+    static char buffer[300]; 
+    int offset = 0; // To keep track of where we are writing in the buffer
+    
+    ads124s08_getTemps(temps);
+    ads124s08_getResistances(res);
+
+    if (hUsbDeviceFS.dev_state == USBD_STATE_CONFIGURED) 
+    {
+        for(int i = 0; i < 4; i++) {
+            // 2. Append to the buffer using offset
+            offset += snprintf(buffer + offset, sizeof(buffer) - offset, 
+                               "%d.: %f C, resistance: %f \r\n", i + 1, temps[i], res[i]);
+        }
+        
+        // 3. Add the end string if needed
+        offset += snprintf(buffer + offset, sizeof(buffer) - offset, "\r\n\r\n");
+
+        // 4. Send everything at once
+        CDC_Transmit_FS((uint8_t*)buffer, strlen(buffer)); 
+    }
 }
 /* USER CODE END PFP */
 
@@ -192,7 +219,8 @@ int main(void)
     ads124s08_poll();
     if(ads124s08_readingsReadyCheck()) {
       tempctrl_pid_loop(isActive); //csak akkor kell meghivni ha korbeert a 4 szenzoron
-      usb_log();
+      if(isActive)
+        usb_log();
     }
 
     //update ui

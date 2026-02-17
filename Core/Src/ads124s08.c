@@ -103,25 +103,67 @@ uint8_t t4_setup[6] = {0x42, 0x00,0xAB, 0x47, 0x00, 0xF9};
 
 uint8_t setupReadCmd[2] = {0x22, 0x05};
 
-
+/*
 Sensor_t sensors[4] = {{
     .resistance = 0.0, .tempDegC = 0.0,
-    .calSlope = 1.0f, .calOffset = 0.0f, // Change these after calibration
+    .calSlope = 1.023008432f, .calOffset = -3.919125325f, // Change these after calibration
     .pSetupData = t1_setup,
     .setupDataSize = sizeof(t1_setup)
 }, {
     .resistance = 0.0, .tempDegC = 0.0,
-    .calSlope = 1.0f, .calOffset = 0.0f,
+    .calSlope = 0.994043718f, .calOffset = -0.778152865f,
     .pSetupData = t2_setup,
     .setupDataSize = sizeof(t2_setup)
 }, {
     .resistance = 0.0, .tempDegC = 0.0,
-    .calSlope = 1.0f, .calOffset = 0.0f,
+    .calSlope = 1.010838778f, .calOffset = -2.914044148f,
     .pSetupData = t3_setup,
     .setupDataSize = sizeof(t3_setup)
 }, {
     .resistance = 0.0, .tempDegC = 0.0,
-    .calSlope = 1.0f, .calOffset = 0.0f,
+    .calSlope = 0.933288195f, .calOffset = 7.705279286f,
+    .pSetupData = t4_setup,
+    .setupDataSize = sizeof(t4_setup)
+}}; */ /*2.
+Sensor_t sensors[4] = {{
+    .resistance = 0.0, .tempDegC = 0.0,
+    .calSlope = 0.988216707f, .calOffset = -0.398966959f, // Change these after calibration
+    .pSetupData = t1_setup,
+    .setupDataSize = sizeof(t1_setup)
+}, {
+    .resistance = 0.0, .tempDegC = 0.0,
+    .calSlope = 0.970160757f, .calOffset = 1.580793683f,
+    .pSetupData = t2_setup,
+    .setupDataSize = sizeof(t2_setup)
+}, {
+    .resistance = 0.0, .tempDegC = 0.0,
+    .calSlope = 0.983631241f, .calOffset = -0.212819165f,
+    .pSetupData = t3_setup,
+    .setupDataSize = sizeof(t3_setup)
+}, {
+    .resistance = 0.0, .tempDegC = 0.0,
+    .calSlope = 0.901793524f, .calOffset = 10.8069555f,
+    .pSetupData = t4_setup,
+    .setupDataSize = sizeof(t4_setup)
+}}; */
+Sensor_t sensors[4] = {{
+    .resistance = 0.0, .tempDegC = 0.0,
+    .calSlope = 1.042873672f, .calOffset = -5.988640109f, // Change these after calibration
+    .pSetupData = t1_setup,
+    .setupDataSize = sizeof(t1_setup)
+}, {
+    .resistance = 0.0, .tempDegC = 0.0,
+    .calSlope = 1.018613572f, .calOffset = -3.367738865f,
+    .pSetupData = t2_setup,
+    .setupDataSize = sizeof(t2_setup)
+}, {
+    .resistance = 0.0, .tempDegC = 0.0,
+    .calSlope = 1.034610898f, .calOffset = -5.441077305f,
+    .pSetupData = t3_setup,
+    .setupDataSize = sizeof(t3_setup)
+}, {
+    .resistance = 0.0, .tempDegC = 0.0,
+    .calSlope = 0.949758141f, .calOffset = 6.027623744f,
     .pSetupData = t4_setup,
     .setupDataSize = sizeof(t4_setup)
 }};
