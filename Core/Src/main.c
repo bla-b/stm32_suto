@@ -76,6 +76,20 @@ void display_write(char* firstline, char* secondline)
     CDC_Transmit_FS((uint8_t*)msg, strlen(msg));
   }
 }
+void usb_log() {
+  double temps[4] = {0};
+  double res[4] = {0};
+  char buffer[50];
+  char* end = "\n\n\n";
+  if (hUsbDeviceFS.dev_state == USBD_STATE_CONFIGURED) 
+  {
+    for(int i = 0; i < 4; i++) {
+      snprintf(buffer, sizeof(buffer), "%d.: %f C, resistance: %f \n", i + 1, temps[i], res[i]);
+      CDC_Transmit_FS((uint8_t*)buffer, strlen(buffer));
+    }
+    CDC_Transmit_FS((uint8_t*)end, strlen(end));
+  }
+}
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -178,6 +192,7 @@ int main(void)
     ads124s08_poll();
     if(ads124s08_readingsReadyCheck()) {
       tempctrl_pid_loop(isActive); //csak akkor kell meghivni ha korbeert a 4 szenzoron
+      usb_log();
     }
 
     //update ui

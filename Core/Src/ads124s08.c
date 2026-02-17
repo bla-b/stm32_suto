@@ -146,14 +146,14 @@ static void convert(Sensor_t* sensor, uint8_t rawData[]) {
     // 2. Convert to Raw Resistance
     // Formula: R_rtd = R_ref * (Code / (Gain * 2^23))
     // Gain is 4, R_REF_VAL is 1620.0
-    double raw_R = R_REF_VAL * ((double)intData / (4.0 * 8388608.0));
+    sensor->resistance = R_REF_VAL * ((double)intData / (4.0 * 8388608.0));
 
     // 3. Apply Calibration (Fixes wire offset and Resistor tolerance)
-    sensor->resistance = (raw_R * sensor->calSlope) + sensor->calOffset;
+    double R = (sensor->resistance * sensor->calSlope) + sensor->calOffset;
 
     // 4. Convert Resistance to Temperature (Callendar-Van Dusen)
     // Using float sqrtf for speed on STM32L5 (FPU)
-    double R = sensor->resistance;
+    //double R = sensor->resistance;
     
     // Check for broken sensor (Infinite resistance or 0)
     if (R < 10.0 || R > 400.0) {
@@ -209,7 +209,6 @@ void ads124s08_poll() {
     const uint8_t startCmd = 0x08;
 
     uint8_t rawData[3] = {0};
-    bool ready = false;
 
     switch (state) {
         case ADC_SWITCH_INPUT:
@@ -230,7 +229,6 @@ void ads124s08_poll() {
 
         break;
         case ADC_WAIT_FOR_DREADY:
-            ready = HAL_GPIO_ReadPin(ADC__DRDY_GPIO_Port, ADC__DRDY_Pin) == GPIO_PIN_RESET;
             if(dataReadyFlag) { //read data
                 dataReadyFlag = false;
                 HAL_GPIO_WritePin(ADC__CS_GPIO_Port, ADC__CS_Pin, GPIO_PIN_RESET);
@@ -249,6 +247,12 @@ void ads124s08_poll() {
 void ads124s08_getTemps(double arrayOf4temps[]) {
     for(int i = 0; i < 4; i++) {
         arrayOf4temps[i] = sensors[i].tempDegC;
+    }
+}
+
+void ads124s08_getResistances(double arrayOf4res[]) {
+    for(int i = 0; i < 4; i++) {
+        arrayOf4res[i] = sensors[i].resistance;
     }
 }
 
