@@ -146,6 +146,8 @@ Sensor_t sensors[4] = {{
     .pSetupData = t4_setup,
     .setupDataSize = sizeof(t4_setup)
 }}; */
+
+/*
 Sensor_t sensors[4] = {{
     .resistance = 0.0, .tempDegC = 0.0,
     .calSlope = 1.042873672f, .calOffset = -5.988640109f, // Change these after calibration
@@ -164,6 +166,30 @@ Sensor_t sensors[4] = {{
 }, {
     .resistance = 0.0, .tempDegC = 0.0,
     .calSlope = 0.949758141f, .calOffset = 6.027623744f,
+    .pSetupData = t4_setup,
+    .setupDataSize = sizeof(t4_setup)
+}};
+
+*/
+
+Sensor_t sensors[4] = {{
+    .resistance = 0.0, .tempDegC = 0.0,
+    .calSlope = 1.02951282f, .calOffset = -5.286492936f, // Change these after calibration
+    .pSetupData = t1_setup,
+    .setupDataSize = sizeof(t1_setup)
+}, {
+    .resistance = 0.0, .tempDegC = 0.0,
+    .calSlope = 1.005216546f, .calOffset = -2.663731814f,
+    .pSetupData = t2_setup,
+    .setupDataSize = sizeof(t2_setup)
+}, {
+    .resistance = 0.0, .tempDegC = 0.0,
+    .calSlope = 1.021049865f, .calOffset = -4.714559241f,
+    .pSetupData = t3_setup,
+    .setupDataSize = sizeof(t3_setup)
+}, {
+    .resistance = 0.0, .tempDegC = 0.0,
+    .calSlope = 0.945657065f, .calOffset = 5.772022665f,
     .pSetupData = t4_setup,
     .setupDataSize = sizeof(t4_setup)
 }};
