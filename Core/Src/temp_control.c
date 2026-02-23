@@ -5,9 +5,12 @@
 #include "ui.h"
 
 //H1 = 2.4kW, H2 = 2kW, H3 = 1.2kW
-#define OUT_PWR_HYSTERESYS (0) //[W]
+#define OUT_PWR_HYSTERESYS (500) //[W]
+#define INTEGRAL_LIMIT (200.0)
 #define FAN_ON_T_DIFF_THRESHOLD (4.0) //[degC]
 #define FAN_OFF_T_DIFF_THRESHOLD (3.5) //[degC]
+
+
 #define ABS(x) (x > 0 ? x : -x)
 
 const PowerLevel_t pwrLevels[8] = {
@@ -88,6 +91,7 @@ void tempctrl_pid_loop(bool isActive) {
     //get temperature:
     double temps[4];
     ads124s08_getTemps(temps);
+    double avgTemp = ads124s08_getAvgTemp();
 
     // --- VÉSZLEÁLLÍTÓ (TÚLMELEGEDÉS VÉDELEM) ---
     // Végignézzük mind a 4 szenzort.
@@ -108,9 +112,7 @@ void tempctrl_pid_loop(bool isActive) {
     // -------------------------------------------
 
     //calculate error:
-    double avg = temps[0] + temps[1] + temps[2] + temps[3];
-    avg /= 4.0;
-    error = setTemp - avg;
+    error = setTemp - avgTemp;
     //calculate delta t:
     dt = (time - lastTime) / 1000.0; //elapsed time in s
     if(dt > 2.0)
@@ -124,8 +126,8 @@ void tempctrl_pid_loop(bool isActive) {
 
     //integral
     integral += error * dt;
-    integral = (integral > 1000.0) ? 1000.0 : integral; //limit integral
-    integral = (integral < -1000.0) ? -1000.0 : integral;
+    integral = (integral > INTEGRAL_LIMIT) ? INTEGRAL_LIMIT : integral; //limit integral
+    integral = (integral < -INTEGRAL_LIMIT) ? -INTEGRAL_LIMIT : integral;
 
     //calculate output:
     pwrOut = (int)((P * error + I * integral + D * derivative) * 1000.0); //ezt lehet meg kell majd szorozni mondjuk 1000-rel

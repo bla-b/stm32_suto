@@ -184,8 +184,7 @@ bool update_UI_str(char* firstLine, char* secondLine, const UiState_t* ui, const
 
     double temps[4] = {69.1, 132.4, 145.5, 111.2};
     ads124s08_getTemps(temps);
-    double averageTemp = temps[0] + temps[1] + temps[2] + temps[3];
-    averageTemp /= 4.0;
+    double averageTemp = ads124s08_getAvgTemp();
 
     if(ui->setterActive) {
         snprintf(l1, sizeof(l1), ui->setter.setting->printfStr, ui->setter.currentValue);

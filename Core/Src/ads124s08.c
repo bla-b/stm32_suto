@@ -173,22 +173,22 @@ Sensor_t sensors[4] = {{
 */
 
 Sensor_t sensors[4] = {{
-    .resistance = 0.0, .tempDegC = 0.0,
+    .resistance = 0.0, .tempDegC = 999.0,
     .calSlope = 1.02951282f, .calOffset = -5.286492936f, // Change these after calibration
     .pSetupData = t1_setup,
     .setupDataSize = sizeof(t1_setup)
 }, {
-    .resistance = 0.0, .tempDegC = 0.0,
+    .resistance = 0.0, .tempDegC = 999.0,
     .calSlope = 1.005216546f, .calOffset = -2.663731814f,
     .pSetupData = t2_setup,
     .setupDataSize = sizeof(t2_setup)
 }, {
-    .resistance = 0.0, .tempDegC = 0.0,
+    .resistance = 0.0, .tempDegC = 999.0,
     .calSlope = 1.021049865f, .calOffset = -4.714559241f,
     .pSetupData = t3_setup,
     .setupDataSize = sizeof(t3_setup)
 }, {
-    .resistance = 0.0, .tempDegC = 0.0,
+    .resistance = 0.0, .tempDegC = 999.0,
     .calSlope = 0.945657065f, .calOffset = 5.772022665f,
     .pSetupData = t4_setup,
     .setupDataSize = sizeof(t4_setup)
@@ -225,7 +225,7 @@ static void convert(Sensor_t* sensor, uint8_t rawData[]) {
     
     // Check for broken sensor (Infinite resistance or 0)
     if (R < 10.0 || R > 400.0) {
-        sensor->tempDegC = -999.0; // Error code
+        sensor->tempDegC = 999.0; // Error code
         return;
     }
 
@@ -316,6 +316,21 @@ void ads124s08_getTemps(double arrayOf4temps[]) {
     for(int i = 0; i < 4; i++) {
         arrayOf4temps[i] = sensors[i].tempDegC;
     }
+}
+
+double ads124s08_getAvgTemp() { // csak a mukodo szenzorokat szamolja bele az atlagba
+    double avg = 0.0;
+    int validNum = 0;
+    for(int i = 0; i < 4; i++) {
+        if(sensors[i].tempDegC < 900.0) {
+            validNum++;
+            avg += sensors[i].tempDegC;
+        }
+    }
+    if(validNum == 0)
+        return 999.0;
+    avg /= validNum;
+    return avg;
 }
 
 void ads124s08_getResistances(double arrayOf4res[]) {

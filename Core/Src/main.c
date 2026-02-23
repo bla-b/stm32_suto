@@ -22,6 +22,7 @@
 #include "icache.h"
 #include "iwdg.h"
 #include "spi.h"
+#include "stm32l5xx_hal.h"
 #include "tim.h"
 #include "usb_device.h"
 #include "gpio.h"
@@ -154,6 +155,7 @@ int main(void)
   };
 
   uint32_t u32BlinkTimer = 0u;
+  uint32_t u32PidLoopTimer = 0u;
 
   UiState_t uiState = {
     .mainState = UI_HOME
@@ -214,10 +216,14 @@ int main(void)
     if(button_check_event(&start_stop_btn, BTN_RELEASED)) {
       HAL_GPIO_TogglePin(ACTIVE_LED_GPIO_Port, ACTIVE_LED_Pin);
       isActive = !isActive;
+
+      u32PidLoopTimer = HAL_GetTick() + 5000u;
     }
 
     ads124s08_poll();
-    if(ads124s08_readingsReadyCheck()) {
+    //if(ads124s08_readingsReadyCheck()) {
+    if(HAL_GetTick() - u32PidLoopTimer < 5000u) {
+      u32PidLoopTimer = HAL_GetTick();
       tempctrl_pid_loop(isActive); //csak akkor kell meghivni ha korbeert a 4 szenzoron
       if(isActive)
         usb_log();
