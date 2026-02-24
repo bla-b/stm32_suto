@@ -42,7 +42,7 @@ MEMORY
 {
   RAM	(xrw)	: ORIGIN = 0x20000000,	LENGTH = 192K
   RAM2	(xrw)	: ORIGIN = 0x20030000,	LENGTH = 64K
-  ROM	(rx)	: ORIGIN = 0x8000000,	LENGTH = 256K
+  ROM	(rx)	: ORIGIN = 0x8000000,	LENGTH = 254K /* Reduced by 2KB for stored settings */
 }
 /* Highest address of the user mode stack */
 _estack = ORIGIN(RAM) + LENGTH(RAM);	/* end of "RAM" Ram type memory */

@@ -34,6 +34,14 @@ typedef struct {
     SetterState_t setter;
 }UiState_t;
 
+typedef struct __attribute__((aligned(8))){
+    double setTemp;
+    double Kp;
+    double Ki;
+    double Kd;
+    uint64_t writeCount;
+}StoredSettings_t;
+
 //void setter_begin(SetterState_t* st, Setting_t* setting, Encoder_t* encoder);
 
 /*returns false once finished*/
@@ -43,6 +51,8 @@ typedef struct {
 void update_UI_state(UiState_t* ui, Encoder_t* encoder, Button_t* encoderBtn);
 bool update_UI_str(char* firstLine, char* secondLine, const UiState_t* ui, const Encoder_t* encoderPos);
 
+void ui_Load_Settings();
+HAL_StatusTypeDef ui_Save_Settings();
 void ui_get_settings(double* setTemp, double* P, double* I, double* D);
 
 #endif

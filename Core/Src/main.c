@@ -194,6 +194,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   HAL_TIM_Encoder_Start(&htim2, TIM_CHANNEL_ALL);
   ads124s08_init();
+  ui_Load_Settings();
   // --- LCD INDÍTÁS ---
   lcd1.hi2c = &hi2c1;       // Az I2C busz hozzárendelése (fontos: hi2c1)
   lcd1.address = 0x4E;      // Cím beállítása (Ha nem megy, próbáld: 0x27)
@@ -217,12 +218,12 @@ int main(void)
       HAL_GPIO_TogglePin(ACTIVE_LED_GPIO_Port, ACTIVE_LED_Pin);
       isActive = !isActive;
 
-      u32PidLoopTimer = HAL_GetTick() + 5000u;
+      u32PidLoopTimer = HAL_GetTick() - 5000u; //azonnal lefut a pid frissites
     }
 
     ads124s08_poll();
     //if(ads124s08_readingsReadyCheck()) {
-    if(HAL_GetTick() - u32PidLoopTimer < 5000u) {
+    if(HAL_GetTick() - u32PidLoopTimer > 5000u) {
       u32PidLoopTimer = HAL_GetTick();
       tempctrl_pid_loop(isActive); //csak akkor kell meghivni ha korbeert a 4 szenzoron
       if(isActive)
@@ -238,15 +239,7 @@ int main(void)
 
       // --- LCD FRISSÍTÉS ---
       //lcd_clear(&lcd1);             // Törlés (fontos a szemetelődés ellen)
-      //clear helyett:
-      int firstLength = strlen(firstLine);
-      int secondLength = strlen(secondLine);
-      for(int i = firstLength; i < sizeof(firstLine) - 1; i++)
-        firstLine[i] = ' ';
-      firstLine[sizeof(firstLine) - 1] = '\n';
-      for(int i = secondLength; i < sizeof(secondLine) - 1; i++)
-        secondLine[i] = ' ';
-      secondLine[sizeof(secondLine) - 1] = '\n';
+      
 
       lcd_gotoxy(&lcd1, 0, 0);      // 1. sor eleje
       lcd_puts(&lcd1, firstLine);   // 1. szöveg

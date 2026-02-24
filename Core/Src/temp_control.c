@@ -6,7 +6,7 @@
 
 //H1 = 2.4kW, H2 = 2kW, H3 = 1.2kW
 #define OUT_PWR_HYSTERESYS (500) //[W]
-#define INTEGRAL_LIMIT (200.0)
+#define INTEGRAL_LIMIT (200.0) //[degC * s]
 #define FAN_ON_T_DIFF_THRESHOLD (4.0) //[degC]
 #define FAN_OFF_T_DIFF_THRESHOLD (3.5) //[degC]
 
@@ -96,7 +96,7 @@ void tempctrl_pid_loop(bool isActive) {
     // --- VÉSZLEÁLLÍTÓ (TÚLMELEGEDÉS VÉDELEM) ---
     // Végignézzük mind a 4 szenzort.
     for(int i = 0; i < 4; i++) {
-        if(temps[i] > 200.0) { // 250 fok felett vészleállítás! Ezt átírhatod a sütőd max limitjére.
+        if(temps[i] > 250.0 && temps[i] < 990.0) { // 250 fok felett vészleállítás! Ezt átírhatod a sütőd max limitjére.
             
             // Minden fűtést és ventilátort azonnal lekapcsolunk!
             HAL_GPIO_WritePin(H1_GPIO_Port, H1_Pin, GPIO_PIN_RESET);
@@ -115,8 +115,8 @@ void tempctrl_pid_loop(bool isActive) {
     error = setTemp - avgTemp;
     //calculate delta t:
     dt = (time - lastTime) / 1000.0; //elapsed time in s
-    if(dt > 2.0)
-        dt = 2.0;
+    //if(dt > 2.0)
+    //     dt = 2.0;
 
     //derivative:
     if(dt > 0.01)
@@ -152,6 +152,8 @@ void tempctrl_pid_loop(bool isActive) {
     int minIndex = 0;
     int maxIndex = 0;
     for(int i = 1; i < 4; i++) { //find min and max temperature
+        if(temps[i] > 998.0)
+            continue; //skip disconnected sensor
         if(temps[i] > temps[maxIndex])
             maxIndex = i;
         if(temps[i] < temps[minIndex])

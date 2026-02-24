@@ -11,6 +11,14 @@ Verdict: This code works by accident. It is inefficient, buggy, and dangerous. I
 (which the PID suggests), I wouldn't trust it to toast bread, let alone control an industrial process.
 */
 
+
+// Example Flash Page (Check your linker script/memory map)
+// STM32L552RCT6 has 256KB or 512KB Flash. 
+// Let's use the last page of Bank 2 (e.g., Page 127 for 256KB device)
+#define SETTINGS_FLASH_ADDR   0x0803F800 
+#define SETTINGS_FLASH_PAGE   63
+#define SETTINGS_FLASH_BANK   FLASH_BANK_2
+
 #define MENU_OPTIONS_NUM (2)
 
 static Setting_t setTemp = {
@@ -112,7 +120,10 @@ static bool setter_poll(SetterState_t *st, Encoder_t *encoder, Button_t* btn) {
         if(button_check_event(btn, BTN_RELEASED)) {
             if(encoder_get_delta(encoder) % 2 == 0) {
                 //ok
-                st->setting->value = st->currentValue;
+                if(st->setting->value != st->currentValue) {
+                    st->setting->value = st->currentValue;
+                    ui_Save_Settings();
+                }
             }
             encoder_zero(encoder);
             return false;
@@ -173,8 +184,8 @@ void update_UI_state(UiState_t* ui, Encoder_t* encoder, Button_t* encoderBtn) {
 bool update_UI_str(char* firstLine, char* secondLine, const UiState_t* ui, const Encoder_t* encoder) {
     char l1[17];
     char l2[17];
-    bool h1, h2, h3, fan; //to do: updatelni ezeket
-    h1 = h2 = h3 = fan = true;
+    bool h1, h2, h3, fan;
+    //h1 = h2 = h3 = fan = true;
     
     h1 = (HAL_GPIO_ReadPin(H1_GPIO_Port, H1_Pin) == GPIO_PIN_SET);
     h2 = (HAL_GPIO_ReadPin(H2_GPIO_Port, H2_Pin) == GPIO_PIN_SET);
@@ -233,6 +244,16 @@ bool update_UI_str(char* firstLine, char* secondLine, const UiState_t* ui, const
         }
     }
 
+    //clear helyett:
+    int firstLength = strlen(l1);
+    int secondLength = strlen(l2);
+    for(int i = firstLength; i < sizeof(l1) - 1; i++)
+        l1[i] = ' ';
+    l1[sizeof(l1) - 1] = '\0';
+    for(int i = secondLength; i < sizeof(l2) - 1; i++)
+        l2[i] = ' ';
+    l2[sizeof(l2) - 1] = '\0';
+
     if(strcmp(l1, firstLine) == 0 && strcmp(l2, secondLine) == 0)
         return false;
     strcpy(firstLine, l1);
@@ -248,5 +269,78 @@ void ui_get_settings(double* temp, double* P, double* I, double* D)
         *P = pid_settings[0].value;
         *I = pid_settings[1].value;
         *D = pid_settings[2].value;
+    }
+}
+
+HAL_StatusTypeDef ui_Save_Settings() {
+    HAL_StatusTypeDef status;
+    FLASH_EraseInitTypeDef eraseInitStruct;
+    uint32_t PageError;
+
+    StoredSettings_t __attribute__((aligned(8))) newSettings = {
+        .setTemp = setTemp.value,
+        .Kp = pid_settings[0].value,
+        .Ki = pid_settings[1].value,
+        .Kd = pid_settings[2].value,
+        .writeCount = 0
+    };
+
+    StoredSettings_t *flashData = (StoredSettings_t *)SETTINGS_FLASH_ADDR;
+    // Check if the Flash is empty (0xFF) or contains valid data
+    if (flashData->writeCount == 0xFFFFFFFFFFFFFFFF) {
+        newSettings.writeCount = 1;
+    }
+    else {
+        newSettings.writeCount = flashData->writeCount + 1;
+    }
+
+    // 1. Disable interrupts, unlock flash
+    __disable_irq();
+    HAL_FLASH_Unlock();
+    __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_ALL_ERRORS);
+
+    // 2. Erase the page before writing
+    eraseInitStruct.TypeErase = FLASH_TYPEERASE_PAGES;
+    eraseInitStruct.Banks     = SETTINGS_FLASH_BANK;
+    eraseInitStruct.Page      = SETTINGS_FLASH_PAGE;
+    eraseInitStruct.NbPages   = 1;
+
+    status = HAL_FLASHEx_Erase(&eraseInitStruct, &PageError);
+    if (status != HAL_OK) {
+        HAL_FLASH_Lock();
+        return status;
+    }
+
+    // 3. Program the struct data as Double Words (64-bit)
+    uint64_t *dataPtr = (uint64_t *)(&newSettings);
+    uint32_t address = SETTINGS_FLASH_ADDR;
+    uint32_t iterations = sizeof(StoredSettings_t) / sizeof(uint64_t);
+
+    for (uint32_t i = 0; i < iterations; i++) {
+        status = HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, address, dataPtr[i]);
+        if (status != HAL_OK)
+            break;
+        address += 8; // Increment by 8 bytes for next Double Word
+    }
+
+    // 4. Enable interrupts, lock flash
+    __enable_irq();
+    HAL_FLASH_Lock();
+    return status;
+}
+
+void ui_Load_Settings() { //adatok betoltese inicializalaskorh
+    StoredSettings_t *flashData = (StoredSettings_t *)SETTINGS_FLASH_ADDR;
+    
+    // Check if the Flash is empty (0xFF) or contains valid data
+    if (flashData->writeCount == 0xFFFFFFFFFFFFFFFF) {
+        // Save hardcoded defaults if Flash is empty
+        ui_Save_Settings();
+    } else {
+        // Copy from Flash to RAM
+        setTemp.value = flashData->setTemp;
+        pid_settings[0].value = flashData->Kp;
+        pid_settings[1].value = flashData->Ki;
+        pid_settings[2].value = flashData->Kd;
     }
 }
