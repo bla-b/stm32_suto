@@ -4,16 +4,20 @@
 #include "stm32l5xx_hal_gpio.h"
 #include "ui.h"
 
-//H1 = 2.4kW, H2 = 2kW, H3 = 1.2kW
-#define OUT_PWR_HYSTERESYS (500) //[W]
-#define INTEGRAL_LIMIT (200.0) //[degC * s]
+//H1 = 2.4kW, H2 = 2kW, H3 = 1.2kW //H1 most nincs
+#define NO_H1
+
+#define OUT_PWR_HYSTERESYS (0) //[W]
+#define INTEGRAL_LIMIT (50.0) //[degC * s]
 #define FAN_ON_T_DIFF_THRESHOLD (4.0) //[degC]
 #define FAN_OFF_T_DIFF_THRESHOLD (3.5) //[degC]
 
 
-#define ABS(x) (x > 0 ? x : -x)
+#define ABS(x) ((x) > 0 ? (x) : -(x))
 
-const PowerLevel_t pwrLevels[8] = {
+#ifndef NO_H1
+#define POWER_LEVELS_NUM (8)
+const PowerLevel_t pwrLevels[POWER_LEVELS_NUM] = {
     {
         .power_w = 0,
         .H1state = GPIO_PIN_RESET,
@@ -63,6 +67,38 @@ const PowerLevel_t pwrLevels[8] = {
         .H3state = GPIO_PIN_SET
     }
 };
+#endif
+#ifdef NO_H1
+#define POWER_LEVELS_NUM (4)
+
+const PowerLevel_t pwrLevels[POWER_LEVELS_NUM] = {
+    {
+        .power_w = 0,
+        .H1state = GPIO_PIN_RESET,
+        .H2state = GPIO_PIN_RESET,
+        .H3state = GPIO_PIN_RESET
+    },
+    {
+        .power_w = 1200,
+        .H1state = GPIO_PIN_RESET,
+        .H2state = GPIO_PIN_RESET,
+        .H3state = GPIO_PIN_SET
+    },
+    {
+        .power_w = 2000,
+        .H1state = GPIO_PIN_RESET,
+        .H2state = GPIO_PIN_SET,
+        .H3state = GPIO_PIN_RESET
+    },
+    {
+        .power_w = 3200,
+        .H1state = GPIO_PIN_RESET,
+        .H2state = GPIO_PIN_SET,
+        .H3state = GPIO_PIN_SET
+    }
+};
+
+#endif
 
 void tempctrl_pid_loop(bool isActive) {
     static uint32_t lastTime = 0;
@@ -133,9 +169,9 @@ void tempctrl_pid_loop(bool isActive) {
     pwrOut = (int)((P * error + I * integral + D * derivative) * 1000.0); //ezt lehet meg kell majd szorozni mondjuk 1000-rel
 
     //find best power level
-    if(ABS(pwrOut - lastPwrOut) > OUT_PWR_HYSTERESYS) { //hiszterizis, hogy ne kapcsolgassanak feleslegesen a relek, majd kiderul kell-e
+    if(ABS(pwrOut - lastPwrOut) > OUT_PWR_HYSTERESYS) { //ez most igy szar de nem kell//hiszterizis, hogy ne kapcsolgassanak feleslegesen a relek, majd kiderul kell-e
         int newLvlIndex = 0;
-        for(int i = 1; i < 8; i++) {
+        for(int i = 1; i < POWER_LEVELS_NUM; i++) {
             if(pwrOut > ((pwrLevels[i].power_w + pwrLevels[i - 1].power_w) / 2)) //megnezzuk melyikhez van a legkozelebb
                 newLvlIndex++;
         }
