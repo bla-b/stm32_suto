@@ -22,7 +22,6 @@
 #include "icache.h"
 #include "iwdg.h"
 #include "spi.h"
-#include "stm32l5xx_hal.h"
 #include "tim.h"
 #include "usb_device.h"
 #include "gpio.h"
@@ -172,8 +171,6 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-  //gemini lcd fix, ha nem kell ki lehet venni:
-  HAL_Delay(100);
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -230,6 +227,11 @@ int main(void)
         usb_log();
     }
 
+    if(ads124s08_readingsReadyCheck()) { //csak akkor frissitjuk, ha korbert
+      // Frissítjük a Watchdog-ot                       //kb 2s ra van allitva 16x prescalerrel
+      HAL_IWDG_Refresh(&hiwdg); 
+    }
+
     //update ui
     update_UI_state(&uiState, &encoder, &encoder_btn);
     //update display (csak ha valami valtozott)
@@ -258,8 +260,7 @@ int main(void)
       u32BlinkTimer = HAL_GetTick();
     }
 
-    // Frissítjük a Watchdog-ot                       // CubeMx ben be kell állítani a watchdogot
-    HAL_IWDG_Refresh(&hiwdg); 
+    
 
     /* USER CODE END WHILE */
 
