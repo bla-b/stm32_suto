@@ -124,7 +124,7 @@ Sensor_t sensors[4] = {{
     .calSlope = 0.933288195f, .calOffset = 7.705279286f,
     .pSetupData = t4_setup,
     .setupDataSize = sizeof(t4_setup)
-}}; */ /*2.
+}}; *//*2.
 Sensor_t sensors[4] = {{
     .resistance = 0.0, .tempDegC = 0.0,
     .calSlope = 0.988216707f, .calOffset = -0.398966959f, // Change these after calibration
@@ -171,7 +171,7 @@ Sensor_t sensors[4] = {{
 }};
 
 */
-
+/* 
 Sensor_t sensors[4] = {{
     .resistance = 0.0, .tempDegC = 999.0,
     .calSlope = 1.02951282f, .calOffset = -5.286492936f, // Change these after calibration
@@ -190,6 +190,27 @@ Sensor_t sensors[4] = {{
 }, {
     .resistance = 0.0, .tempDegC = 999.0,
     .calSlope = 0.945657065f, .calOffset = 5.772022665f,
+    .pSetupData = t4_setup,
+    .setupDataSize = sizeof(t4_setup)
+}}; */
+Sensor_t sensors[4] = {{
+    .resistance = 0.0, .tempDegC = 999.0,
+    .calSlope = 1.0f, .calOffset = 0.0f, // Change these after calibration
+    .pSetupData = t1_setup,
+    .setupDataSize = sizeof(t1_setup)
+}, {
+    .resistance = 0.0, .tempDegC = 999.0,
+    .calSlope = 1.0f, .calOffset = 0.0f,
+    .pSetupData = t2_setup,
+    .setupDataSize = sizeof(t2_setup)
+}, {
+    .resistance = 0.0, .tempDegC = 999.0,
+    .calSlope = 1.0f, .calOffset = 0.0f,
+    .pSetupData = t3_setup,
+    .setupDataSize = sizeof(t3_setup)
+}, {
+    .resistance = 0.0, .tempDegC = 999.0,
+    .calSlope = 1.0f, .calOffset = 0.0f,
     .pSetupData = t4_setup,
     .setupDataSize = sizeof(t4_setup)
 }};
