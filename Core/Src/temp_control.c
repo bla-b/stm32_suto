@@ -7,8 +7,8 @@
 //H1 = 2.4kW, H2 = 2kW, H3 = 1.2kW //H1 most nincs
 #define NO_H1
 
-#define OUT_PWR_HYSTERESYS (0) //[W]
-#define INTEGRAL_LIMIT (50.0) //[degC * s]
+#define OUT_PWR_HYSTERESYS (100) //[W]
+#define INTEGRAL_LIMIT (200.0) //[degC * s]
 #define FAN_ON_T_DIFF_THRESHOLD (4.0) //[degC]
 #define FAN_OFF_T_DIFF_THRESHOLD (3.5) //[degC]
 
@@ -161,12 +161,17 @@ void tempctrl_pid_loop(bool isActive) {
         derivative = 0.0;
 
     //integral
-    integral += error * dt;
+    if (ABS(error) < 5.0) {
+        integral += error * dt;
+    } else {
+        integral = 0; 
+    }
+    // integral += error * dt;
     integral = (integral > INTEGRAL_LIMIT) ? INTEGRAL_LIMIT : integral; //limit integral
-    integral = (integral < -INTEGRAL_LIMIT) ? -INTEGRAL_LIMIT : integral;
+    integral = (integral < 0.0) ? 0.0 : integral; //ne menjen negativba mert az minek
 
     //calculate output:
-    pwrOut = (int)((P * error + I * integral + D * derivative) * 1000.0); //ezt lehet meg kell majd szorozni mondjuk 1000-rel
+    pwrOut = (int)((P * error + I / 10.0 * integral + D * derivative * 10.0) * 1000.0); //ezt lehet meg kell majd szorozni mondjuk 1000-rel
 
     //find best power level
     if(ABS(pwrOut - lastPwrOut) > OUT_PWR_HYSTERESYS) { //ez most igy szar de nem kell//hiszterizis, hogy ne kapcsolgassanak feleslegesen a relek, majd kiderul kell-e
@@ -175,6 +180,8 @@ void tempctrl_pid_loop(bool isActive) {
             if(pwrOut > ((pwrLevels[i].power_w + pwrLevels[i - 1].power_w) / 2)) //megnezzuk melyikhez van a legkozelebb
                 newLvlIndex++;
         }
+
+        lastPwrOut = pwrOut;//fontos hogy csak akkor allitsuk at, ha megvolt a frissites
 
         //set the output
         HAL_GPIO_WritePin(H1_GPIO_Port, H1_Pin, pwrLevels[newLvlIndex].H1state);
@@ -207,7 +214,6 @@ void tempctrl_pid_loop(bool isActive) {
     //
     lastTime = time;
     lastError = error;
-    lastPwrOut = pwrOut;
 }
 
 
